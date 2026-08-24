@@ -143,6 +143,20 @@ def blend(first: QColor, second: QColor, t: float) -> QColor:
     return oklch(l1 + (l2 - l1) * t, c1 + (c2 - c1) * t, h1 + delta * t)
 
 
+def blend_direct(first: QColor, second: QColor, t: float) -> QColor:
+    """Interpolate in a straight line through OKLab.
+
+    For a palette somebody chose, this is the honest blend: it stays between the
+    two colours instead of travelling round the hue circle and inventing ones
+    that are not in the set -- blue to rust by the polar route passes through
+    green.
+    """
+    t = _clamp(t)
+    l1, a1, b1 = to_oklab(first)
+    l2, a2, b2 = to_oklab(second)
+    return _from_oklab(l1 + (l2 - l1) * t, a1 + (a2 - a1) * t, b1 + (b2 - b1) * t)
+
+
 def _from_oklab(lightness: float, a: float, b: float) -> QColor:
     red, green, blue = oklab_to_rgb(lightness, a, b)
     return QColor.fromRgbF(
@@ -239,6 +253,8 @@ class Palette:
     @classmethod
     def for_theme(cls, seed: int, theme, dark: bool | None = None) -> "Palette":
         """A palette obeying a theme's colour constraints."""
+        if getattr(theme, "colors", ()):
+            return cls.from_hex(theme.colors, dark=theme.dark if dark is None else dark)
         return cls(
             seed,
             dark=theme.dark if dark is None else dark,
@@ -302,7 +318,13 @@ class Palette:
         varies shape to shape, which is what reads as coherent.
         """
         if not getattr(self, "_generated", False):
-            return self.ramp(light_t)
+            # A given palette has no hue formula to sample, so the slow field
+            # chooses which of its colours to use and the fast one only shades
+            # that colour up or down. Letting the fast field pick the colour
+            # instead would jump between palette entries shape to shape.
+            base = self.ramp(hue_t)
+            lightness, c, hue = to_oklch(base)
+            return oklch(lightness + (_clamp(light_t) - 0.5) * 0.22, c * chroma, hue)
         lo, hi = self._lightness
         # The same cohesion slice the ramp uses: most images look better over
         # part of the scheme than over all of it.
@@ -318,4 +340,8 @@ class Palette:
             return self.colors[0]
         pos = t * (len(self.colors) - 1)
         i = min(int(pos), len(self.colors) - 2)
-        return blend(self.colors[i], self.colors[i + 1], pos - i)
+        # Generated ramps take the polar route, which keeps chroma up between
+        # distant hues; a given palette takes the direct one, which invents no
+        # colours its author did not pick.
+        mix = blend if getattr(self, "_generated", False) else blend_direct
+        return mix(self.colors[i], self.colors[i + 1], pos - i)

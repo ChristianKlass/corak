@@ -1,0 +1,22 @@
+{
+  "id": "slate",
+  "name": "Slate",
+  "description": "Almost colourless, large shapes, very low contrast.",
+  "patterns": [
+    "hexagons",
+    "triangles"
+  ],
+  "schemes": [
+    "mono"
+  ],
+  "chroma": [
+    0.008,
+    0.032
+  ],
+  "dark": true,
+  "effects": {
+    "calm": 0.55
+  },
+  "scale": 1.7,
+  "depth": 1.0
+}

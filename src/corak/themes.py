@@ -12,8 +12,14 @@ changed by deriving from one that already works.
 
 from __future__ import annotations
 
+import json
 from dataclasses import asdict, dataclass, field, replace
+import os
+from importlib import resources
+from pathlib import Path
 from typing import Sequence
+
+from PySide6.QtGui import QColor
 
 from .palette import SCHEMES
 
@@ -30,6 +36,9 @@ class Theme:
     schemes: tuple[str, ...] = ()
     # In turns. The end may exceed 1.0 to describe a range that wraps past red.
     hue_range: tuple[float, float] | None = None
+    # Explicit colours, as hex. Given these, the hue and chroma ranges are
+    # ignored: the palette is the one supplied rather than one generated.
+    colors: tuple[str, ...] = ()
     chroma: tuple[float, float] = (0.045, 0.16)
     # Perceptual lightness the ramp spans. Left unset it follows `dark`.
     lightness: tuple[float, float] | None = None
@@ -64,6 +73,7 @@ class Theme:
         data["schemes"] = list(self.schemes)
         data["hue_range"] = list(self.hue_range) if self.hue_range else None
         data["chroma"] = list(self.chroma)
+        data["colors"] = list(self.colors)
         data["lightness"] = list(self.lightness) if self.lightness else None
         return data
 
@@ -77,6 +87,7 @@ class Theme:
             base,
             description=str(data.get("description", "")),
             patterns=tuple(data.get("patterns") or ()),
+            colors=tuple(str(c) for c in (data.get("colors") or ())),
             schemes=tuple(s for s in (data.get("schemes") or ()) if s in SCHEMES),
             hue_range=(float(hue[0]), float(hue[1])) if hue else None,
             chroma=(float(chroma[0]), float(chroma[1])),
@@ -98,68 +109,53 @@ class Theme:
         )
 
 
-BUILT_IN: tuple[Theme, ...] = (
-    Theme(
-        id="quiet",
-        name="Quiet",
-        description="Dark and barely there. Made to sit behind windows.",
-        schemes=("mono", "analogous"),
-        # Steers clear of the khaki quarter of the wheel, as Linen does: at low
-        # chroma it is not garish, but it is drab.
-        hue_range=(0.45, 1.12),
-        chroma=(0.025, 0.07),
-        dark=True,
-        effects={"calm": 0.7},
-        scale=1.3,
-    ),
-    Theme(
-        id="slate",
-        name="Slate",
-        description="Almost colourless, large shapes, very low contrast.",
-        patterns=("hexagons", "triangles"),
-        schemes=("mono",),
-        chroma=(0.008, 0.032),
-        dark=True,
-        effects={"calm": 0.55},
-        scale=1.7,
-    ),
-    Theme(
-        id="ember",
-        name="Ember",
-        description="Reds through amber, dark, with the edges falling away.",
-        schemes=("mono", "analogous"),
-        hue_range=(0.94, 1.14),
-        chroma=(0.09, 0.17),
-        dark=True,
-        effects={"calm": 0.4, "vignette": 0.5},
-    ),
-    Theme(
-        id="tide",
-        name="Tide",
-        description="Cool blues and teals, softly graded.",
-        schemes=("analogous", "split"),
-        hue_range=(0.47, 0.63),
-        chroma=(0.07, 0.14),
-        dark=True,
-        effects={"calm": 0.45},
-        scale=1.15,
-    ),
-    Theme(
-        id="linen",
-        name="Linen",
-        description="Soft and muted. Lighter than the rest without lighting up the room.",
-        schemes=("mono", "analogous"),
-        # Everything except roughly 0.12 to 0.45 of a turn, which is where the
-        # khaki lives at these lightnesses. The range wraps past red, and stops
-        # clear of the boundary rather than resting on it.
-        hue_range=(0.45, 1.12),
-        chroma=(0.03, 0.07),
-        lightness=(0.52, 0.72),
-        dark=False,
-        effects={"calm": 0.2},
-        scale=0.95,
-    ),
-)
+def _load_packaged() -> tuple[Theme, ...]:
+    """Read the built-in themes from the JSON shipped beside this module.
+
+    Kept as data rather than code so a theme can come from anywhere -- hand
+    written, exported from the app, or generated somewhere else entirely -- and
+    so tuning one is not a source change.
+    """
+    directory = resources.files(__package__) / "data" / "themes"
+    themes = []
+    for entry in sorted(directory.iterdir(), key=lambda e: e.name):
+        if not entry.name.endswith(".json"):
+            continue
+        try:
+            theme = Theme.from_dict(json.loads(entry.read_text()))
+        except (OSError, ValueError, TypeError, KeyError, IndexError):
+            # One unreadable file must not take the whole set down with it.
+            continue
+        if theme.id:
+            themes.append(theme)
+    return tuple(themes)
+
+
+def user_dir() -> Path:
+    base = os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config"
+    return Path(base) / "corak" / "themes"
+
+
+def _load_directory(directory: Path) -> list[Theme]:
+    if not directory.is_dir():
+        return []
+    themes = []
+    for entry in sorted(directory.glob("*.json")):
+        try:
+            theme = Theme.from_dict(json.loads(entry.read_text()))
+        except (OSError, ValueError, TypeError, KeyError, IndexError):
+            continue
+        if theme.id:
+            themes.append(theme)
+    return themes
+
+
+def user_themes() -> list[Theme]:
+    """Themes dropped into the config directory, from wherever they came."""
+    return _load_directory(user_dir())
+
+
+BUILT_IN: tuple[Theme, ...] = _load_packaged()
 
 BY_ID: dict[str, Theme] = {theme.id: theme for theme in BUILT_IN}
 
@@ -170,11 +166,86 @@ def get(identifier: str, extra: Sequence[Theme] = ()) -> Theme:
     A settings file naming a theme that has since been deleted should not stop
     the wallpaper rotating.
     """
-    for theme in extra:
+    for theme in list(extra) + user_themes():
         if theme.id == identifier:
             return theme
-    return BY_ID.get(identifier) or BY_ID[DEFAULT_ID]
+    if identifier in BY_ID:
+        return BY_ID[identifier]
+    # A default that has itself been removed should still not raise.
+    return BY_ID.get(DEFAULT_ID) or (BUILT_IN[0] if BUILT_IN else Theme("none", "None"))
 
 
 def all_themes(extra: Sequence[Theme] = ()) -> list[Theme]:
-    return list(BUILT_IN) + [t for t in extra if t.id not in BY_ID]
+    themes = list(BUILT_IN)
+    seen = {t.id for t in themes}
+    for theme in user_themes() + list(extra):
+        if theme.id not in seen:
+            themes.append(theme)
+            seen.add(theme.id)
+    return themes
+
+
+def problems(data: dict) -> list[str]:
+    """Everything wrong with a theme document, in plain words.
+
+    Returned rather than raised: a file written elsewhere is worth reporting on
+    in full instead of one complaint at a time.
+    """
+    found = []
+    if not str(data.get("id", "")).strip():
+        found.append("needs an id")
+    if not str(data.get("name", "")).strip():
+        found.append("needs a name")
+
+    for key, limit in (("chroma", 0.4), ("lightness", 1.0)):
+        value = data.get(key)
+        if value is None:
+            continue
+        if not (isinstance(value, (list, tuple)) and len(value) == 2):
+            found.append(f"{key} must be two numbers")
+        elif not all(isinstance(v, (int, float)) for v in value):
+            found.append(f"{key} must be two numbers")
+        elif value[0] > value[1]:
+            found.append(f"{key} runs backwards")
+        elif not (0.0 <= value[0] and value[1] <= limit):
+            found.append(f"{key} must lie between 0 and {limit}")
+
+    hue = data.get("hue_range")
+    if hue is not None:
+        if not (isinstance(hue, (list, tuple)) and len(hue) == 2):
+            found.append("hue_range must be two numbers")
+        elif hue[0] > hue[1]:
+            found.append("hue_range runs backwards")
+        elif hue[1] - hue[0] > 1.0:
+            found.append("hue_range covers more than the whole wheel")
+
+    colors = data.get("colors") or ()
+    if not isinstance(colors, (list, tuple)):
+        found.append("colors must be a list of hex codes")
+    else:
+        for code in colors:
+            if not isinstance(code, str) or not QColor(
+                code if str(code).startswith("#") else f"#{code}"
+            ).isValid():
+                found.append(f"not a colour: {code}")
+        if colors and len(colors) < 2:
+            found.append("colors needs at least two entries")
+
+    unknown = [s for s in (data.get("schemes") or ()) if s not in SCHEMES]
+    if unknown:
+        found.append(f"unknown schemes: {', '.join(map(str, unknown))} "
+                     f"(known: {', '.join(sorted(SCHEMES))})")
+
+    for key in ("scale", "depth"):
+        value = data.get(key, 1.0)
+        if not isinstance(value, (int, float)) or not 0.0 <= value <= 4.0:
+            found.append(f"{key} must be a number between 0 and 4")
+
+    effects = data.get("effects") or {}
+    if not isinstance(effects, dict):
+        found.append("effects must be a mapping of name to strength")
+    else:
+        for name, strength in effects.items():
+            if not isinstance(strength, (int, float)) or not 0.0 <= strength <= 1.0:
+                found.append(f"effect {name} must be between 0 and 1")
+    return found

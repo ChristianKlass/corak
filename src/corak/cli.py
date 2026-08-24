@@ -21,6 +21,12 @@ def _parser() -> argparse.ArgumentParser:
         help="generate and set the next wallpaper without opening a window",
     )
     parser.add_argument("--list-patterns", action="store_true", help="list pattern names and exit")
+    parser.add_argument("--list-themes", action="store_true", help="list theme names and exit")
+    parser.add_argument(
+        "--add-theme",
+        metavar="FILE",
+        help="check a theme document and install it, or '-' to read one from stdin",
+    )
     parser.add_argument("--history", type=int, metavar="N", help="show the last N designs and exit")
     parser.add_argument(
         "--install-desktop",
@@ -67,6 +73,65 @@ def _show_history(limit: int) -> int:
     return 0
 
 
+def _list_themes() -> int:
+    from .themes import BY_ID, all_themes
+
+    for theme in all_themes():
+        if theme.derived_from:
+            origin = f"from {theme.derived_from}"
+        else:
+            origin = "built-in" if theme.id in BY_ID else "installed"
+        print(f"{theme.id:<12} {theme.name:<16} {origin:<14} {theme.description}")
+    return 0
+
+
+def _add_theme(source: str) -> int:
+    """Validate a theme document and install it for the user."""
+    import json
+    import shutil
+
+    from .themes import Theme, problems, user_dir
+
+    try:
+        raw = sys.stdin.read() if source == "-" else open(source, encoding="utf-8").read()
+        documents = json.loads(raw)
+    except (OSError, ValueError) as exc:
+        print(f"corak: {exc}", file=sys.stderr)
+        return 1
+
+    # A single theme or a list of them: a generated file is as likely to be one
+    # as the other, and rejecting the wrong shape helps nobody.
+    if isinstance(documents, dict):
+        documents = [documents]
+    if not isinstance(documents, list):
+        print("corak: expected a theme object or a list of them", file=sys.stderr)
+        return 1
+
+    faults = False
+    for document in documents:
+        if not isinstance(document, dict):
+            print(f"corak: not a theme: {document!r}", file=sys.stderr)
+            faults = True
+            continue
+        found = problems(document)
+        if found:
+            name = document.get("id") or "<no id>"
+            for problem in found:
+                print(f"corak: {name}: {problem}", file=sys.stderr)
+            faults = True
+    if faults:
+        return 1
+
+    directory = user_dir()
+    directory.mkdir(parents=True, exist_ok=True)
+    for document in documents:
+        theme = Theme.from_dict(document)
+        path = directory / f"{theme.id}.json"
+        path.write_text(json.dumps(document, indent=2) + "\n")
+        print(f"installed {theme.name} -> {path}")
+    return 0
+
+
 def _install_desktop() -> int:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from PySide6.QtGui import QGuiApplication
@@ -95,6 +160,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.history is not None:
         return _show_history(args.history)
+    if args.list_themes:
+        return _list_themes()
+    if args.add_theme:
+        return _add_theme(args.add_theme)
     if args.install_desktop:
         return _install_desktop()
     if args.next:

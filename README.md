@@ -25,6 +25,8 @@ python3 -m venv .venv
 | `corak --history 20` | the last 20 designs |
 | `corak --list-patterns` | pattern names |
 | `corak --install-desktop` | add corak to the application menu |
+| `corak --list-themes` | list themes and where they came from |
+| `corak --add-theme FILE` | check a theme document and install it (`-` for stdin) |
 
 `--install-desktop` writes a menu entry pointing at the interpreter that ran it,
 so a virtualenv checkout appears in the launcher without a system-wide install.
@@ -98,6 +100,19 @@ image a theme produces is different; they all look related.
 | **Ember** | Reds through amber, dark, with the edges falling away. |
 | **Tide** | Cool blues and teals, softly graded. |
 | **Linen** | Soft and muted. Lighter than the rest without lighting up the room. |
+
+Themes are data, not code: the built-in ones are JSON shipped beside the module,
+and anything dropped into `$XDG_CONFIG_HOME/corak/themes` is picked up too. A
+theme can state hue, chroma and lightness ranges and have its palette generated,
+or give explicit colours and have them used as they are. `docs/theme-prompt.md`
+is a prompt for getting a set out of a chat model; `--add-theme` reports
+everything wrong with a document rather than one fault at a time, since a
+generated file is worth checking in full.
+
+A given palette is interpolated in a straight line through OKLab rather than
+round the hue circle. The polar route keeps chroma up between distant hues,
+which is right for a generated scheme, but for colours somebody chose it invents
+ones they did not pick — blue to rust by that route passes through green.
 
 Themes are chosen rather than built. Starting from nothing means answering a
 dozen questions before seeing anything, so the settings window adjusts a theme

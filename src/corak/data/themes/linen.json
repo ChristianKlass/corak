@@ -1,0 +1,27 @@
+{
+  "id": "linen",
+  "name": "Linen",
+  "description": "Soft and muted. Lighter than the rest without lighting up the room.",
+  "schemes": [
+    "mono",
+    "analogous"
+  ],
+  "hue_range": [
+    0.45,
+    1.12
+  ],
+  "chroma": [
+    0.03,
+    0.07
+  ],
+  "lightness": [
+    0.52,
+    0.72
+  ],
+  "dark": false,
+  "effects": {
+    "calm": 0.2
+  },
+  "scale": 0.95,
+  "depth": 1.0
+}
