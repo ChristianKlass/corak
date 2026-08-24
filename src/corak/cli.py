@@ -22,6 +22,11 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--list-patterns", action="store_true", help="list pattern names and exit")
     parser.add_argument("--history", type=int, metavar="N", help="show the last N designs and exit")
+    parser.add_argument(
+        "--install-desktop",
+        action="store_true",
+        help="add corak to the application menu and exit",
+    )
     parser.add_argument("--version", action="version", version=f"corak {__version__}")
     return parser
 
@@ -62,6 +67,24 @@ def _show_history(limit: int) -> int:
     return 0
 
 
+def _install_desktop() -> int:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6.QtGui import QGuiApplication
+
+    QGuiApplication.instance() or QGuiApplication([])
+
+    from .desktop import install
+    from .scheduler import executable
+
+    try:
+        icon, entry = install(executable())
+    except OSError as exc:
+        print(f"corak: {exc}", file=sys.stderr)
+        return 1
+    print(f"installed {entry}\n          {icon}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
 
@@ -72,6 +95,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.history is not None:
         return _show_history(args.history)
+    if args.install_desktop:
+        return _install_desktop()
     if args.next:
         return _rotate_headless()
 

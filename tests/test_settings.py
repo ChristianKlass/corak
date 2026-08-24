@@ -16,6 +16,7 @@ from PySide6.QtGui import QGuiApplication  # noqa: E402
 
 _app = QGuiApplication.instance() or QGuiApplication([])
 
+from corak import desktop  # noqa: E402
 from corak import scheduler  # noqa: E402
 from corak.config import Settings, load, save  # noqa: E402
 from corak.engine import Engine  # noqa: E402
@@ -156,6 +157,28 @@ class TestScheduler(unittest.TestCase):
         with mock.patch.object(scheduler.shutil, "which", return_value=None):
             with self.assertRaises(scheduler.SchedulerError):
                 scheduler.systemctl("daemon-reload")
+
+
+class TestDesktopEntry(unittest.TestCase):
+    def test_entry_points_at_the_given_executable(self) -> None:
+        text = desktop.entry_text("/opt/corak/.venv/bin/corak")
+        self.assertIn("Exec=/opt/corak/.venv/bin/corak", text)
+        self.assertIn("Icon=corak", text)
+        self.assertIn("Type=Application", text)
+
+    def test_icon_is_square_and_stable(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            first = desktop.write_icon(Path(tmp) / "a.png")
+            second = desktop.write_icon(Path(tmp) / "b.png")
+            self.assertEqual(first.read_bytes(), second.read_bytes())
+
+    def test_install_writes_both_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(
+            os.environ, {"XDG_DATA_HOME": tmp}, clear=False
+        ), mock.patch.object(desktop.shutil, "which", return_value=None):
+            icon, entry = desktop.install("/opt/corak")
+        self.assertTrue(str(icon).startswith(tmp))
+        self.assertTrue(str(entry).endswith("applications/corak.desktop"))
 
 
 if __name__ == "__main__":

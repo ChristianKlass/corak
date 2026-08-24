@@ -24,6 +24,15 @@ python3 -m venv .venv
 | `corak --next` | generate and set a wallpaper, no window — what the timer runs |
 | `corak --history 20` | the last 20 designs |
 | `corak --list-patterns` | pattern names |
+| `corak --install-desktop` | add corak to the application menu |
+
+`--install-desktop` writes a menu entry pointing at the interpreter that ran it,
+so a virtualenv checkout appears in the launcher without a system-wide install.
+Put the entry point on `PATH` too if you want the bare command:
+
+```sh
+ln -sf "$PWD/.venv/bin/corak" ~/.local/bin/corak
+```
 
 ## Keys
 
