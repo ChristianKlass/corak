@@ -43,9 +43,9 @@ ln -sf "$PWD/.venv/bin/corak" ~/.local/bin/corak
 | Key | Action |
 | --- | --- |
 | ↑ | New pattern and new colours |
-| ← | Same pattern, new colours |
+| ← | Back to the previous design |
 | → | Same colours, new pattern |
-| ↓ | Back to the previous design |
+| ↓ | Same pattern and geometry, new colours |
 | T | Next theme (Shift+T for the previous one) |
 | C | Toggle *calm* |
 | D | Toggle *darken* |
@@ -58,7 +58,7 @@ ln -sf "$PWD/.venv/bin/corak" ~/.local/bin/corak
 
 A wallpaper is fully described by a `Design`: a pattern name plus two
 independent seeds, one for geometry and one for colour. Keeping them separate is
-what lets ← recolour without disturbing the layout and → relayout without
+what lets ↓ recolour without disturbing the layout and → relayout without
 disturbing the colours, and it means a history entry can be reproduced exactly.
 
 The engine paints onto a `QImage` rather than a `QPixmap`. `QImage` has no

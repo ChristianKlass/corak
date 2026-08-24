@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QPushButton,
     QScrollArea,
+    QSizePolicy,
     QSlider,
     QSpinBox,
     QVBoxLayout,
@@ -186,10 +187,17 @@ class SettingsDialog(QDialog):
         self.theme_list.setCurrentRow(
             max(0, next((i for i, t in enumerate(self.themes) if t.id == self._settings.theme), 0))
         )
-        self.theme_list.setMinimumHeight(210)
+        # The theme is the setting that matters, so it gets the room. The
+        # sections under it are fixed-height controls that gain nothing from
+        # extra space, and a scroll area would otherwise hand it to the gap at
+        # the bottom.
+        self.theme_list.setMinimumHeight(360)
+        self.theme_list.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
         self.theme_list.currentRowChanged.connect(self._theme_picked)
-        inner.addWidget(self.theme_list)
-        column.addWidget(card)
+        inner.addWidget(self.theme_list, 1)
+        column.addWidget(card, 1)
 
         # shape -------------------------------------------------------------
         column.addWidget(self._section("shape"))
@@ -289,7 +297,6 @@ class SettingsDialog(QDialog):
         self.schedule.setWordWrap(True)
         inner.addWidget(self.schedule)
         column.addWidget(card)
-        column.addStretch(1)
 
         scroller = QScrollArea(self)
         scroller.setWidgetResizable(True)

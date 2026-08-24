@@ -15,9 +15,13 @@ os.environ["XDG_CONFIG_HOME"] = os.path.join(_isolated, "config")
 os.environ["XDG_DATA_HOME"] = os.path.join(_isolated, "data")
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtGui import QColor, QGuiApplication
+from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QApplication
 
-_app = QGuiApplication.instance() or QGuiApplication([])
+# QApplication rather than QGuiApplication: it is a subclass, and the widget
+# tests need one. Creating the narrower class first leaves them unable to build
+# a QWidget at all.
+_app = QApplication.instance() or QApplication([])
 
 import itertools
 

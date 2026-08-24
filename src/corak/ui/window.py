@@ -51,11 +51,14 @@ EFFECT_KEYS = {
     Qt.Key.Key_G: "grain",
 }
 
+# Left is back. It breaks the symmetry of one axis per horizontal key, but
+# back-is-left is a far stronger habit than any symmetry an interface can
+# invent, and reaching for it and getting new colours is a worse surprise.
 ARROWS = (
     ("↑", "new pattern + new colours"),
-    ("←", "new colours"),
+    ("←", "back to the previous design"),
     ("→", "new pattern"),
-    ("↓", "back to the previous design"),
+    ("↓", "new colours"),
 )
 
 
@@ -370,11 +373,11 @@ class MainWindow(QMainWindow):
         if key == Qt.Key.Key_Up:
             self._show(self.session.regenerate())
         elif key == Qt.Key.Key_Left:
-            self._show(self.session.recolour())
+            self._show(self.session.previous())
         elif key == Qt.Key.Key_Right:
             self._show(self.session.repattern())
         elif key == Qt.Key.Key_Down:
-            self._show(self.session.previous())
+            self._show(self.session.recolour())
         elif key in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
             self.apply_wallpaper()
         elif key == Qt.Key.Key_T:
