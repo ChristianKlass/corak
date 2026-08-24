@@ -92,7 +92,9 @@ class Engine:
         except KeyError as exc:
             raise UnknownPattern(design.pattern) from exc
 
-        effects = dict(effects or {})
+        # Keyed on the palette seed, so recolouring changes how much of the
+        # palette the effects leave visible, and stays reproducible.
+        effects = fx.jitter(dict(effects or {}), random.Random(design.palette_seed ^ 0xC0FFEE))
         theme = self.theme_for(design) if design.theme else None
         # The quiet mode works poorly against a light ground, so on an
         # unconstrained palette it forces a dark one. A theme that states which

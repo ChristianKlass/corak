@@ -15,7 +15,7 @@ os.environ["XDG_CONFIG_HOME"] = os.path.join(_isolated, "config")
 os.environ["XDG_DATA_HOME"] = os.path.join(_isolated, "data")
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtGui import QGuiApplication  # noqa: E402
+from PySide6.QtGui import QColor, QGuiApplication  # noqa: E402
 
 _app = QGuiApplication.instance() or QGuiApplication([])
 
@@ -214,6 +214,31 @@ class TestPerceptualColour(unittest.TestCase):
         blue, rust = QColor("#2f6d84"), QColor("#b5622f")
         self.assertEqual(blend_direct(blue, rust, 0.0).name(), blue.name())
         self.assertEqual(blend_direct(blue, rust, 1.0).name(), rust.name())
+
+    def test_recolouring_a_muted_palette_can_reach_a_vivid_one(self) -> None:
+        # Otherwise the only escape from a grey theme is to change theme, and
+        # every reroll is another step toward grey.
+        muted = ["#1a1d24", "#252b36", "#38404f", "#4d586b", "#637087"]
+        source = max(to_oklch(QColor(c))[1] for c in muted)
+        reached = [
+            max(to_oklch(c)[1] for c in Palette.from_hex(muted, seed=s).colors)
+            for s in range(40)
+        ]
+        self.assertGreater(max(reached), source * 2.5)
+
+    def test_recolouring_can_also_leave_a_palette_as_written(self) -> None:
+        muted = ["#1a1d24", "#252b36", "#38404f", "#4d586b", "#637087"]
+        source = max(to_oklch(QColor(c))[1] for c in muted)
+        reached = [
+            max(to_oklch(c)[1] for c in Palette.from_hex(muted, seed=s).colors)
+            for s in range(40)
+        ]
+        self.assertTrue(any(abs(r - source) < 0.005 for r in reached))
+
+    def test_an_unseeded_palette_is_exactly_what_was_given(self) -> None:
+        given = ["#1a1d24", "#637087"]
+        palette = Palette.from_hex(given)
+        self.assertEqual([c.name() for c in palette.colors], given)
 
     def test_from_hex_orders_by_perceptual_lightness(self) -> None:
         palette = Palette.from_hex(["#ffff00", "#0000ff", "#808080"])

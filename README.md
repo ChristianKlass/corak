@@ -109,6 +109,19 @@ is a prompt for getting a set out of a chat model; `--add-theme` reports
 everything wrong with a document rather than one fault at a time, since a
 generated file is worth checking in full.
 
+A theme's colours describe a region of colour space rather than five exact
+points. Rerolling the colours rotates the hue a little, shifts the lightness a
+little, and aims the chroma at an absolute target — usually near what the theme
+asked for, sometimes well past it. Without that last part a muted theme has no
+vivid variant in it at all, and the only escape from a grey wallpaper is to
+change theme. Aiming at an absolute chroma rather than scaling by a factor
+matters because a palette written at 0.04 cannot be multiplied into a colourful
+one by any factor that is not absurd for a palette written at 0.15.
+
+The tonal effects vary with the palette too, weighted downward: turning the
+quiet mode down reveals the colours underneath, which is the point of rerolling
+them, while turning it up only ever hides more.
+
 A given palette is interpolated in a straight line through OKLab rather than
 round the hue circle. The polar route keeps chroma up between distant hues,
 which is right for a generated scheme, but for colours somebody chose it invents

@@ -33,6 +33,28 @@ def warning(name: str) -> str | None:
     return COSTLY.get(name)
 
 
+# Effects whose strength varies with the palette rather than being fixed by the
+# theme. Recolouring should be able to lift the quiet mode off a wallpaper --
+# otherwise a theme with a heavy one shows the same muted image however many
+# times its colours are rerolled. Grain is left alone: its cost is in file size,
+# not in how the image reads.
+VARIABLE = ("calm", "darken", "vignette")
+
+
+def jitter(effects: Mapping[str, float], rng: random.Random) -> dict[str, float]:
+    """Vary the tonal effects around what the theme asked for.
+
+    Weighted downward. Turning one down reveals the palette underneath, which is
+    the point; turning it up only ever hides more.
+    """
+    varied = {}
+    for name, strength in effects.items():
+        if name in VARIABLE:
+            strength = float(strength) * rng.uniform(0.2, 1.15)
+        varied[name] = max(0.0, min(1.0, float(strength)))
+    return {k: v for k, v in varied.items() if v > 0.02}
+
+
 class UnknownEffect(ValueError):
     pass
 

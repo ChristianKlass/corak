@@ -289,6 +289,31 @@ class Palette:
         # Sorted by perceptual lightness, so the ramp climbs the way the eye
         # reads it rather than the way HSL happens to number it.
         colors.sort(key=lambda c: to_oklab(c)[0])
+
+        if seed is not None:
+            # A palette describes a region of colour space, not five exact
+            # points. Rerolling the colours has to be able to reach a more
+            # saturated version of the theme, or the only way to escape a muted
+            # image is to change theme entirely -- and chroma that can only fall
+            # means every reroll is a step further toward grey.
+            vary = random.Random(seed ^ 0x5EED)
+            turn = vary.uniform(-0.07, 0.07)
+            lift = vary.uniform(-0.05, 0.05)
+            # Aimed at an absolute chroma rather than scaled by a factor: a
+            # palette written at 0.04 cannot be multiplied into a colourful one
+            # without the multiplier being absurd for a palette written at 0.15.
+            # Weighted toward what the theme asked for, but able to reach past
+            # it, so a muted theme still has a vivid variant in it.
+            strongest = max(to_oklch(c)[1] for c in colors) or 0.001
+            target = vary.choices(
+                (strongest, strongest * 0.7, 0.07, 0.10, 0.14),
+                weights=(34, 16, 18, 18, 14),
+            )[0]
+            gain = min(6.0, target / strongest)
+            colors = [
+                oklch(lightness + lift, chroma * gain, hue + turn)
+                for lightness, chroma, hue in (to_oklch(c) for c in colors)
+            ]
         palette = cls.__new__(cls)
         palette.seed = -1
         palette.scheme = "custom"
