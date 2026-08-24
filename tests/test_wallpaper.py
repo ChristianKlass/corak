@@ -224,33 +224,68 @@ class TestRenderAndApply(unittest.TestCase):
             wp.render_and_apply(self.engine, self.design, screens=[screen()], backend=Fake())
 
 
-class TestNativeSizes(unittest.TestCase):
-    """KScreen is trusted over Qt for panel resolution."""
+class TestKScreen(unittest.TestCase):
+    """Screen geometry comes from KScreen, which Qt cannot supply headless."""
 
     PAYLOAD = json.dumps(
         {
             "outputs": [
-                {"name": "HDMI-1", "enabled": True, "size": {"width": 3840, "height": 1100}},
-                {"name": "DP-9", "enabled": False, "size": {"width": 1920, "height": 1080}},
-                {"name": "DP-1", "enabled": True, "size": {"width": 0, "height": 0}},
+                # A 1.5x output: the panel is 3840x1100 and the desktop 2560x733.
+                {
+                    "name": "HDMI-1", "enabled": True, "priority": 2, "scale": 1.5,
+                    "pos": {"x": 2657, "y": 1920}, "size": {"width": 3840, "height": 1100},
+                },
+                # Rotated: `size` is already the portrait orientation.
+                {
+                    "name": "DP-3", "enabled": True, "priority": 1, "scale": 1,
+                    "pos": {"x": 3440, "y": 0}, "size": {"width": 1080, "height": 1920},
+                },
+                {
+                    "name": "DP-9", "enabled": False, "priority": 3, "scale": 1,
+                    "pos": {"x": 0, "y": 0}, "size": {"width": 1920, "height": 1080},
+                },
             ]
         }
     )
 
-    def test_only_enabled_outputs_with_a_size_are_returned(self) -> None:
-        completed = mock.Mock(stdout=self.PAYLOAD)
-        with mock.patch.object(sc.shutil, "which", return_value="/usr/bin/kscreen-doctor"), \
-             mock.patch.object(sc.subprocess, "run", return_value=completed):
-            self.assertEqual(sc._kscreen_native(), {"HDMI-1": (3840, 1100)})
+    def test_fractional_scale_does_not_inflate_the_panel_size(self) -> None:
+        hdmi = next(s for s in sc.parse_kscreen(self.PAYLOAD) if s.name == "HDMI-1")
+        self.assertEqual((hdmi.width, hdmi.height), (3840, 1100))
+        self.assertEqual((hdmi.logical_width, hdmi.logical_height), (2560, 733))
 
-    def test_missing_tool_is_not_an_error(self) -> None:
-        with mock.patch.object(sc.shutil, "which", return_value=None):
-            self.assertEqual(sc._kscreen_native(), {})
+    def test_rotated_output_is_portrait(self) -> None:
+        dp3 = next(s for s in sc.parse_kscreen(self.PAYLOAD) if s.name == "DP-3")
+        self.assertTrue(dp3.portrait)
+        self.assertEqual((dp3.width, dp3.height), (1080, 1920))
+
+    def test_priority_one_is_the_primary(self) -> None:
+        primary = [s.name for s in sc.parse_kscreen(self.PAYLOAD) if s.primary]
+        self.assertEqual(primary, ["DP-3"])
+
+    def test_disabled_outputs_are_skipped(self) -> None:
+        self.assertNotIn("DP-9", [s.name for s in sc.parse_kscreen(self.PAYLOAD)])
 
     def test_unparseable_output_is_not_an_error(self) -> None:
+        self.assertEqual(sc.parse_kscreen("not json"), [])
+
+    def test_missing_tool_falls_through_to_qt(self) -> None:
+        with mock.patch.object(sc.shutil, "which", return_value=None):
+            self.assertEqual(sc._from_kscreen(), [])
+
+    def test_the_offscreen_platform_is_not_passed_to_kscreen(self) -> None:
+        # kscreen-doctor is itself a Qt program; inheriting the offscreen plugin
+        # would leave it unable to reach the compositor.
+        captured = {}
+
+        def fake_run(argv, **kwargs):
+            captured.update(kwargs.get("env") or {})
+            return mock.Mock(stdout=self.PAYLOAD)
+
         with mock.patch.object(sc.shutil, "which", return_value="/usr/bin/kscreen-doctor"), \
-             mock.patch.object(sc.subprocess, "run", return_value=mock.Mock(stdout="not json")):
-            self.assertEqual(sc._kscreen_native(), {})
+             mock.patch.dict(os.environ, {"QT_QPA_PLATFORM": "offscreen"}, clear=False), \
+             mock.patch.object(sc.subprocess, "run", side_effect=fake_run):
+            sc._from_kscreen()
+        self.assertNotIn("QT_QPA_PLATFORM", captured)
 
 
 if __name__ == "__main__":

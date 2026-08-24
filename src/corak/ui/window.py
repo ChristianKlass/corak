@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import time
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QKeyEvent
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QCloseEvent, QKeyEvent
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QMainWindow,
@@ -16,16 +16,21 @@ from PySide6.QtWidgets import (
 )
 
 from .. import effects as fx
+from .. import scheduler
+from ..config import Settings, save
 from ..design import Design
+from ..rotation import describe, rotate
+from ..screens import primary_size
 from ..session import Session
-from ..wallpaper import WallpaperError, render_and_apply
+from ..store import Store
+from ..wallpaper import WallpaperError
 from .preview import PreviewWidget
+from .settings import SettingsDialog
 
-# Rendering the full panel resolution on every keypress would stall the window
-# for a noticeable beat; the preview keeps the target aspect and only the pixel
-# count comes down.  Full resolution is produced when the wallpaper is applied.
+# Rendering the full panel resolution on every keypress is affordable for the
+# patterns that exist today, but the preview keeps the target aspect and caps
+# the pixel count so a heavier pattern cannot stall the window.
 PREVIEW_LONG_EDGE = 1600
-
 
 EFFECT_KEYS = {
     Qt.Key.Key_C: "calm",
@@ -36,26 +41,38 @@ EFFECT_KEYS = {
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, session: Session, target: tuple[int, int]) -> None:
+    design_changed = Signal(Design)
+
+    def __init__(
+        self,
+        session: Session,
+        settings: Settings,
+        store: Store | None = None,
+        target: tuple[int, int] | None = None,
+    ) -> None:
         super().__init__()
         self.session = session
-        self.target = target
-        self.setWindowTitle("corak")
-
-        # Toggled from the keyboard so the effects can be judged against the
-        # same design; step 4 moves these into saved settings.
-        self.effects: dict[str, float] = {}
+        self.settings = settings
+        self.store = store
+        self.target = target or primary_size()
+        self.effects = dict(settings.effects)
         self._warning = ""
 
+        self.setWindowTitle("corak")
         self.preview = PreviewWidget(self)
+
+        self.settings_button = QPushButton("Settings...", self)
+        self.settings_button.clicked.connect(self.open_settings)
         self.apply_button = QPushButton("Set as wallpaper", self)
         self.apply_button.setDefault(True)
         self.apply_button.clicked.connect(self.apply_wallpaper)
-        # Focus stays on the window so the arrow keys keep working after the
-        # button has been clicked.
-        self.apply_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        for button in (self.settings_button, self.apply_button):
+            # Focus stays on the window so the arrow keys keep working after a
+            # button has been clicked.
+            button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
 
         buttons = QHBoxLayout()
+        buttons.addWidget(self.settings_button)
         buttons.addStretch(1)
         buttons.addWidget(self.apply_button)
 
@@ -87,6 +104,7 @@ class MainWindow(QMainWindow):
         image = self.session.engine.render(design, w, h, self.effects)
         elapsed = (time.perf_counter() - started) * 1000.0
         self.preview.set_image(image)
+
         active = ", ".join(f"{k} {v:g}" for k, v in sorted(self.effects.items()))
         self.statusBar().showMessage(
             f"{design}   target {self.target[0]}x{self.target[1]}"
@@ -94,6 +112,50 @@ class MainWindow(QMainWindow):
             + (f"   [{active}]" if active else "")
             + (f"   !  {self._warning}" if self._warning else "")
         )
+        self.design_changed.emit(design)
+
+    def apply_wallpaper(self) -> None:
+        design = self.session.current
+        self.statusBar().showMessage(f"rendering {design} at native size...")
+        self.apply_button.setEnabled(False)
+        try:
+            settings = Settings(
+                interval_minutes=self.settings.interval_minutes,
+                patterns=self.settings.patterns,
+                effects=self.effects,
+                keep=self.settings.keep,
+                rotate=self.settings.rotate,
+            )
+            _, targets = rotate(settings, self.session.engine, self.store, design=design)
+        except WallpaperError as exc:
+            self.statusBar().showMessage(f"could not set wallpaper: {exc}", 8000)
+        else:
+            self.statusBar().showMessage(describe(design, targets), 6000)
+        finally:
+            self.apply_button.setEnabled(True)
+
+    def open_settings(self) -> None:
+        dialog = SettingsDialog(self.settings, self)
+        if dialog.exec() != SettingsDialog.DialogCode.Accepted:
+            return
+        self.settings = dialog.result_settings()
+        save(self.settings)
+        self.session.engine.enabled = list(self.settings.patterns)
+        self.effects = dict(self.settings.effects)
+        self._warning = "; ".join(
+            filter(None, (fx.warning(name) for name in self.effects))
+        )
+        self._apply_schedule()
+        self._show(self.session.current)
+
+    def _apply_schedule(self) -> None:
+        try:
+            if self.settings.rotate:
+                scheduler.enable(self.settings.interval_minutes)
+            else:
+                scheduler.disable()
+        except scheduler.SchedulerError as exc:
+            self.statusBar().showMessage(f"could not change the schedule: {exc}", 8000)
 
     def _toggle(self, name: str) -> None:
         if name in self.effects:
@@ -104,19 +166,14 @@ class MainWindow(QMainWindow):
             self._warning = fx.warning(name) or ""
         self._show(self.session.current)
 
-    def apply_wallpaper(self) -> None:
-        design = self.session.current
-        self.statusBar().showMessage(f"rendering {design} at native size...")
-        self.apply_button.setEnabled(False)
-        try:
-            targets = render_and_apply(self.session.engine, design, self.effects)
-        except WallpaperError as exc:
-            self.statusBar().showMessage(f"could not set wallpaper: {exc}", 8000)
-        else:
-            where = ", ".join(f"{t.screen.name} {t.screen.width}x{t.screen.height}" for t in targets)
-            self.statusBar().showMessage(f"set on {where}", 6000)
-        finally:
-            self.apply_button.setEnabled(True)
+    def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802 (Qt naming)
+        # Hiding rather than quitting keeps the tray icon usable; the tray's
+        # Quit action is what actually ends the process.
+        if self.isVisible() and QSystemTrayAvailable():
+            event.ignore()
+            self.hide()
+            return
+        super().closeEvent(event)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802 (Qt naming)
         key = event.key()
@@ -136,3 +193,9 @@ class MainWindow(QMainWindow):
             self.close()
         else:
             super().keyPressEvent(event)
+
+
+def QSystemTrayAvailable() -> bool:  # noqa: N802 (matches the Qt spelling it wraps)
+    from PySide6.QtWidgets import QSystemTrayIcon
+
+    return QSystemTrayIcon.isSystemTrayAvailable()

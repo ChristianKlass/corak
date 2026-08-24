@@ -8,7 +8,7 @@ library on disk.
 
 ## Status
 
-Step 3 of 4: setting the desktop background.
+Complete: engine, window, effects, desktop integration and automatic rotation.
 
 ## Running
 
@@ -17,6 +17,13 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -e .
 .venv/bin/corak
 ```
+
+| Command | |
+| --- | --- |
+| `corak` | open the window |
+| `corak --next` | generate and set a wallpaper, no window — what the timer runs |
+| `corak --history 20` | the last 20 designs |
+| `corak --list-patterns` | pattern names |
 
 ## Keys
 
@@ -43,6 +50,29 @@ disturbing the colours, and it means a history entry can be reproduced exactly.
 The engine paints onto a `QImage` rather than a `QPixmap`. `QImage` has no
 GUI-thread affinity, so the same code can back the window, a background thread,
 and a headless run under the offscreen platform plugin.
+
+## Automatic rotation
+
+Rotation is a systemd user timer running `corak --next`, not a loop inside the
+application. A resident GUI process would have to be autostarted, stay running
+and survive crashes to keep a schedule; the timer costs nothing while idle and
+comes back after a logout. Turning on *Change the wallpaper automatically* in
+the settings window writes `corak.service` and `corak.timer` and enables them.
+
+The tray icon is a small render of the current design rather than a fixed glyph.
+It offers the next wallpaper on demand, the window, and settings. Closing the
+window hides it to the tray; Quit from the tray menu ends the process.
+
+## Settings and history
+
+Settings live in `$XDG_CONFIG_HOME/corak/settings.json`, written to a temporary
+file and moved into place so an interrupted write cannot leave a half-file that
+silently resets everything. Unknown keys are ignored and missing ones fall back
+to defaults, so a file from a newer version does not stop an older one starting.
+
+Every generated wallpaper is logged to `$XDG_DATA_HOME/corak/history.db`, one
+row per screen, holding the pattern, both seeds, the scheme, the effects and the
+image path — enough to rebuild any past wallpaper exactly.
 
 ## Colour
 
