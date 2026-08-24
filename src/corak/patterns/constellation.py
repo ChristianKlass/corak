@@ -14,6 +14,7 @@ from PySide6.QtGui import QColor, QPainter, QPen, QRadialGradient
 
 from ..frame import Frame
 from ..noise import field
+from ..palette import oklch, to_oklch
 from ..shading import shift, underlay
 from .base import pattern
 
@@ -63,7 +64,35 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
             painter.drawLine(point, nodes[j][0])
 
     painter.setPen(Qt.PenStyle.NoPen)
+    glow_reach = rng.uniform(3.5, 7.0)
     for point, color in nodes:
         size = node_size * rng.uniform(0.6, 1.6)
-        painter.setBrush(shift(color, 0.12))
+
+        # Added rather than blended: a translucent dark colour laid over a dark
+        # ground is invisible, and light is what a glow is made of. The colour
+        # is lifted to a floor rather than by a step, since brightening an
+        # already dark palette entry leaves almost nothing to add.
+        lightness, chroma, hue = to_oklch(color)
+        lit = oklch(max(0.82, lightness + 0.3), chroma * 0.8, hue)
+        reach = size * glow_reach
+
+        painter.save()
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
+        halo = QRadialGradient(point, reach)
+        # A slow falloff. Collapsing to nothing within a third of the radius
+        # leaves a dot with a rim rather than a light with a halo.
+        for stop, strength in ((0.0, 0.75), (0.10, 0.40), (0.30, 0.15), (0.60, 0.05), (1.0, 0.0)):
+            halo.setColorAt(
+                stop,
+                QColor(
+                    round(lit.red() * strength),
+                    round(lit.green() * strength),
+                    round(lit.blue() * strength),
+                ),
+            )
+        painter.setBrush(halo)
+        painter.drawEllipse(QRectF(point.x() - reach, point.y() - reach, reach * 2, reach * 2))
+        painter.restore()
+
+        painter.setBrush(shift(color, 0.18))
         painter.drawEllipse(QRectF(point.x() - size, point.y() - size, size * 2, size * 2))
