@@ -76,38 +76,39 @@ class TestSettings(unittest.TestCase):
         self.assertEqual(theme.effects, {"calm": 1.0})
 
     def test_a_deleted_theme_falls_back_rather_than_failing(self) -> None:
-        self.assertEqual(Settings(theme="gone").normalised().theme, "quiet")
+        self.assertEqual(Settings(theme="gone").normalised().theme, themes.DEFAULT_ID)
 
     def test_derived_themes_survive_a_round_trip(self) -> None:
-        derived = themes.get("tide").derive(effects={"calm": 0.2}, scale=1.4)
+        derived = themes.BUILT_IN[0].derive(effects={"calm": 0.2}, scale=1.4)
         stored = Settings().with_theme(derived).normalised()
         with tempfile.TemporaryDirectory() as tmp:
             path = save(stored, Path(tmp) / "settings.json")
             loaded = load(path)
         self.assertEqual(loaded.theme, derived.id)
         self.assertEqual(loaded.active_theme(), derived)
-        self.assertEqual(loaded.active_theme().derived_from, "tide")
+        self.assertEqual(loaded.active_theme().derived_from, themes.BUILT_IN[0].id)
 
     def test_a_corrupt_custom_theme_is_skipped_not_fatal(self) -> None:
         settings = Settings(custom_themes=[{"id": "bad", "name": "B", "chroma": "nonsense"}])
         self.assertEqual(settings.themes(), [])
 
     def test_deriving_twice_keeps_pointing_at_the_original(self) -> None:
-        once = themes.get("ember").derive(scale=1.1)
+        once = themes.BUILT_IN[0].derive(scale=1.1)
         twice = once.derive(scale=1.2)
-        self.assertEqual(twice.derived_from, "ember")
+        self.assertEqual(twice.derived_from, themes.BUILT_IN[0].id)
 
     def test_a_derived_theme_replaces_its_namesake(self) -> None:
-        first = themes.get("bloom").derive(scale=1.1)
-        second = themes.get("bloom").derive(scale=1.9)
+        first = themes.BUILT_IN[0].derive(scale=1.1)
+        second = themes.BUILT_IN[0].derive(scale=1.9)
         settings = Settings().with_theme(first).with_theme(second)
         self.assertEqual(len(settings.custom_themes), 1)
         self.assertEqual(settings.active_theme().scale, 1.9)
 
     def test_choosing_a_built_in_does_not_store_a_copy(self) -> None:
-        settings = Settings().with_theme(themes.get("tide"))
+        packaged = themes.BUILT_IN[1]
+        settings = Settings().with_theme(packaged)
         self.assertEqual(settings.custom_themes, [])
-        self.assertEqual(settings.theme, "tide")
+        self.assertEqual(settings.theme, packaged.id)
 
     def test_a_partial_write_cannot_replace_the_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

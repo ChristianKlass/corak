@@ -1,0 +1,18 @@
+{
+  "id": "abyss",
+  "name": "Abyssal Flare",
+  "description": "Heavy oceanic depths interrupted by a bright coral flash.",
+  "colors": [
+    "#051014",
+    "#0B1D2E",
+    "#162836",
+    "#1A1A24",
+    "#FF5A5F"
+  ],
+  "dark": true,
+  "effects": {
+    "calm": 0.4,
+    "grain": 0.1
+  },
+  "scale": 1.5
+}

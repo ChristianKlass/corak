@@ -95,11 +95,6 @@ image a theme produces is different; they all look related.
 
 | Theme | |
 | --- | --- |
-| **Quiet** | Dark and barely there. Made to sit behind windows. |
-| **Slate** | Almost colourless, large shapes, very low contrast. |
-| **Ember** | Reds through amber, dark, with the edges falling away. |
-| **Tide** | Cool blues and teals, softly graded. |
-| **Linen** | Soft and muted. Lighter than the rest without lighting up the room. |
 
 Themes are data, not code: the built-in ones are JSON shipped beside the module,
 and anything dropped into `$XDG_CONFIG_HOME/corak/themes` is picked up too. A
@@ -160,6 +155,18 @@ offsets compressed to fit and its base placed so all of them land inside.
 The theme is part of a `Design`, not a setting applied to one: the same seeds
 under a different theme are a different image, so a history row without it could
 not be reproduced.
+
+## Patterns
+
+| Pattern | |
+| --- | --- |
+| `hexagons` | Flat-top hexagonal tiling |
+| `triangles` | Split rectangles — the low-poly look |
+| `waves` | Stacked bands, each casting onto the one behind |
+| `scatter` | Loose shapes over open ground, in depth |
+| `bokeh` | Overlapping translucent discs thrown out of focus |
+| `constellation` | Points joined by lines, mostly empty |
+| `flowing` | A few large organic shapes with lit edges |
 
 ## Colour
 

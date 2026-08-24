@@ -23,7 +23,7 @@ from PySide6.QtGui import QColor
 
 from .palette import SCHEMES
 
-DEFAULT_ID = "quiet"
+DEFAULT_ID = "nightfall"
 
 
 @dataclass(frozen=True)

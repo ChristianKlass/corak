@@ -1,0 +1,18 @@
+{
+  "id": "jewel",
+  "name": "Crown Jewel",
+  "description": "Deep and saturated gemstone hues set in heavy shadow.",
+  "colors": [
+    "#04472B",
+    "#0B305C",
+    "#401F52",
+    "#690D25",
+    "#A87C28"
+  ],
+  "dark": true,
+  "effects": {
+    "vignette": 0.6,
+    "darken": 0.4
+  },
+  "scale": 0.9
+}

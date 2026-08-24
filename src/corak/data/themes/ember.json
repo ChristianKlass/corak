@@ -1,24 +1,17 @@
 {
   "id": "ember",
-  "name": "Ember",
-  "description": "Reds through amber, dark, with the edges falling away.",
-  "schemes": [
-    "mono",
-    "analogous"
-  ],
-  "hue_range": [
-    0.94,
-    1.14
-  ],
-  "chroma": [
-    0.09,
-    0.17
+  "name": "Dying Ember",
+  "description": "Rich fiery hues dying down into dark ash and charcoal.",
+  "colors": [
+    "#4A0E17",
+    "#9A3B14",
+    "#B37A2C",
+    "#221C1A",
+    "#33142B"
   ],
   "dark": true,
   "effects": {
-    "calm": 0.4,
-    "vignette": 0.5
+    "darken": 0.3
   },
-  "scale": 1.0,
-  "depth": 1.0
+  "scale": 1.1
 }

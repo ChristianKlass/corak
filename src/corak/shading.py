@@ -137,6 +137,37 @@ def cast_shadows(
     painter.drawImage(QRect(0, 0, w, h), small)
 
 
+def smooth_loop(points: list[QPointF], tension: float = 0.5) -> QPainterPath:
+    """A closed path curving through every point.
+
+    Catmull-Rom converted to cubic Beziers: the curve passes through the points
+    given rather than being pulled toward them, which is what lets a shape be
+    described by where its edge goes.
+    """
+    count = len(points)
+    path = QPainterPath()
+    if count < 3:
+        return path
+
+    path.moveTo(points[0])
+    for i in range(count):
+        p0 = points[(i - 1) % count]
+        p1 = points[i]
+        p2 = points[(i + 1) % count]
+        p3 = points[(i + 2) % count]
+        control1 = QPointF(
+            p1.x() + (p2.x() - p0.x()) * tension / 3.0,
+            p1.y() + (p2.y() - p0.y()) * tension / 3.0,
+        )
+        control2 = QPointF(
+            p2.x() - (p3.x() - p1.x()) * tension / 3.0,
+            p2.y() - (p3.y() - p1.y()) * tension / 3.0,
+        )
+        path.cubicTo(control1, control2, p2)
+    path.closeSubpath()
+    return path
+
+
 def drop_shadow(
     painter: QPainter,
     path: QPainterPath,
