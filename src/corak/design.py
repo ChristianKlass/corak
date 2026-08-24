@@ -7,6 +7,7 @@ seed could not express either, and would make history entries unreproducible.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 
@@ -21,8 +22,12 @@ class Design:
     theme: str = ""
 
     def slug(self) -> str:
+        # The slug becomes a filename, so the theme is reduced to characters
+        # that cannot be a path. Themes are validated on load as well; this is
+        # the second place, next to the code that depends on it.
         stem = f"{self.pattern}-{self.pattern_seed:06x}-{self.palette_seed:06x}"
-        return f"{self.theme}-{stem}" if self.theme else stem
+        theme = re.sub(r"[^a-zA-Z0-9_-]", "", self.theme)
+        return f"{theme}-{stem}" if theme else stem
 
     def __str__(self) -> str:
         return self.slug()

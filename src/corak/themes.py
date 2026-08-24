@@ -148,16 +148,26 @@ def user_dir() -> Path:
 
 
 def _load_directory(directory: Path) -> list[Theme]:
+    """Read themes from a directory, skipping any that do not check out.
+
+    Checked here and not only on import: a file copied straight into the
+    directory never went through --add-theme, and a theme's id reaches a
+    filename later on.
+    """
     if not directory.is_dir():
         return []
     themes = []
     for entry in sorted(directory.glob("*.json")):
         try:
-            theme = Theme.from_dict(json.loads(entry.read_text()))
-        except (OSError, ValueError, TypeError, KeyError, IndexError):
+            data = json.loads(entry.read_text())
+        except (OSError, ValueError):
             continue
-        if theme.id:
-            themes.append(theme)
+        if not isinstance(data, dict) or problems(data):
+            continue
+        try:
+            themes.append(Theme.from_dict(data))
+        except (ValueError, TypeError, KeyError, IndexError):
+            continue
     return themes
 
 

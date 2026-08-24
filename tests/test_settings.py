@@ -114,6 +114,29 @@ class TestSettings(unittest.TestCase):
             with self.subTest(id=good):
                 self.assertEqual(themes.problems({"id": good, "name": "X"}), [])
 
+    def test_a_theme_file_copied_in_by_hand_is_still_checked(self) -> None:
+        # --add-theme validates, but a file copied straight into the directory
+        # never went through it, and the id reaches a filename later on.
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            (directory / "planted.json").write_text(
+                json.dumps({"id": "../../../etc/x", "name": "Planted",
+                            "colors": ["#101010", "#606060"]})
+            )
+            (directory / "fine.json").write_text(
+                json.dumps({"id": "fine", "name": "Fine",
+                            "colors": ["#101010", "#606060"]})
+            )
+            loaded = themes._load_directory(directory)
+        self.assertEqual([t.id for t in loaded], ["fine"])
+
+    def test_a_slug_cannot_carry_a_path(self) -> None:
+        from corak.design import Design
+
+        slug = Design("waves", 1, 2, "../../../etc/passwd").slug()
+        self.assertNotIn("/", slug)
+        self.assertNotIn("..", slug)
+
     def test_a_corrupt_custom_theme_is_skipped_not_fatal(self) -> None:
         settings = Settings(custom_themes=[{"id": "bad", "name": "B", "chroma": "nonsense"}])
         self.assertEqual(settings.themes(), [])
