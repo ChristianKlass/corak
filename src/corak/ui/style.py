@@ -65,7 +65,7 @@ LIGHT = Scheme(
 def scheme() -> Scheme:
     """Follow the desktop rather than deciding for it."""
     app = QGuiApplication.instance()
-    if app is None:
+    if not isinstance(app, QGuiApplication):
         return DARK
     ground = app.palette().color(QPalette.ColorRole.Window)
     return DARK if ground.lightness() < 128 else LIGHT

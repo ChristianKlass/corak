@@ -58,7 +58,9 @@ def write_icon(path: Path | None = None) -> Path:
     engine = Engine()
     design = engine.new_design(random.Random(ICON_SEED), pattern="hexagons")
     image = engine.render(design, ICON_SIZE, ICON_SIZE)
-    if not image.save(str(path), "PNG"):
+    if not image.save(  # type: ignore[call-overload]
+            str(path), format="PNG"
+        ):
         raise OSError(f"could not write {path}")
     return path
 

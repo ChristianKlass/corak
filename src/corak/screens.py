@@ -141,7 +141,7 @@ def _from_kscreen() -> list[Screen]:
 
 def _from_qt() -> list[Screen]:
     app = QGuiApplication.instance()
-    if app is None:
+    if not isinstance(app, QGuiApplication):
         return []
     primary = app.primaryScreen()
     screens = []

@@ -180,6 +180,7 @@ class Palette:
         lightness_range: tuple[float, float] | None = None,
     ) -> None:
         self.seed = seed
+        self._reverse = False
         rng = random.Random(seed)
         # The draw happens either way: consuming it only when `dark` is unset
         # would shift the rest of the stream, so forcing a dark palette would
@@ -338,7 +339,6 @@ class Palette:
             0.02,
             palette.base_hue,
         )
-        palette._reverse = False
         if seed is None:
             palette._t0, palette._t1 = 0.0, 1.0
         else:

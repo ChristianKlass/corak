@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TypeVar
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPainter, QPaintEvent
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
@@ -75,6 +77,9 @@ class Swatches(QFrame):
             )
 
 
+W = TypeVar("W", bound=QWidget)
+
+
 class Row(QWidget):
     """A horizontal strip with no margins, for composing bars."""
 
@@ -84,7 +89,8 @@ class Row(QWidget):
         self.layout_.setContentsMargins(0, 0, 0, 0)
         self.layout_.setSpacing(spacing)
 
-    def add(self, widget: QWidget, stretch: int = 0) -> QWidget:
+    def add(self, widget: W, stretch: int = 0) -> W:
+        """Returns what it was given, so a caller keeps the type it passed."""
         self.layout_.addWidget(widget, stretch)
         return widget
 

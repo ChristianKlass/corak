@@ -24,6 +24,7 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -e ".[dev]"
 QT_QPA_PLATFORM=offscreen .venv/bin/python -m unittest discover -s tests
 .venv/bin/ruff check src tests
+.venv/bin/mypy
 ```
 
 ## Keys

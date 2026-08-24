@@ -29,7 +29,7 @@ Source = "https://github.com/ChristianKlass/corak"
 Issues = "https://github.com/ChristianKlass/corak/issues"
 
 [project.optional-dependencies]
-dev = ["ruff>=0.6"]
+dev = ["ruff>=0.6", "mypy>=1.11"]
 
 [project.scripts]
 corak = "corak.cli:main"
@@ -39,6 +39,13 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 corak = ["data/themes/*.json"]
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src"]
+# PySide6 ships stubs but not for every module it imports.
+ignore_missing_imports = true
+warn_unused_ignores = true
 
 [tool.ruff]
 line-length = 100

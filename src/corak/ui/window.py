@@ -289,8 +289,9 @@ class MainWindow(QMainWindow):
     def _show_effects(self) -> None:
         while self.chips.layout_.count():
             item = self.chips.layout_.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            widget = item.widget() if item is not None else None
+            if widget is not None:
+                widget.deleteLater()
         for name in fx.ORDER:
             strength = self.effects.get(name)
             if not strength:
@@ -416,8 +417,8 @@ class MainWindow(QMainWindow):
             self.apply_wallpaper()
         elif key == Qt.Key.Key_T:
             self.cycle_theme(-1 if event.modifiers() & Qt.KeyboardModifier.ShiftModifier else 1)
-        elif key in EFFECT_KEYS:
-            self._toggle(EFFECT_KEYS[key])
+        elif Qt.Key(key) in EFFECT_KEYS:
+            self._toggle(EFFECT_KEYS[Qt.Key(key)])
         elif key in (Qt.Key.Key_Escape, Qt.Key.Key_Q):
             self.close()
         else:

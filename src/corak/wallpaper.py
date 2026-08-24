@@ -48,9 +48,13 @@ def save(image: QImage, design: Design, screen: Screen, directory: Path | None =
     """
     directory = directory or output_dir()
     directory.mkdir(parents=True, exist_ok=True)
+    # The PySide6 stub types `format` as bytes and the runtime rejects bytes,
+    # so the ignore is against the stub rather than against the code.
     stamp = time.strftime("%Y%m%d-%H%M%S")
     path = directory / f"{stamp}-{screen.name}-{design.slug()}.png"
-    if not image.save(str(path), "PNG"):
+    if not image.save(  # type: ignore[call-overload]
+            str(path), format="PNG"
+        ):
         raise WallpaperError(f"could not write {path}")
     return path
 

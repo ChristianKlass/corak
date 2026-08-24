@@ -18,6 +18,7 @@ from PySide6.QtCore import QPointF, QRect, Qt
 from PySide6.QtGui import (
     QBrush,
     QColor,
+    QGradient,
     QImage,
     QLinearGradient,
     QPainter,
@@ -43,6 +44,7 @@ def underlay(painter: QPainter, frame: Frame, pal, rng, strength: float = 1.0) -
     designed wallpaper from a tiling: it gives the image somewhere to be bright
     and somewhere to be dark, which no amount of per-cell variation supplies.
     """
+    gradient: QGradient
     if rng.random() < 0.72:
         angle = rng.uniform(0, math.tau)
         length = frame.diagonal * 0.55

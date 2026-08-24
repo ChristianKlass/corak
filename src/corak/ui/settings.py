@@ -180,10 +180,10 @@ class SettingsDialog(QDialog):
         self.theme_list.setSpacing(0)
         for theme in self.themes:
             item = QListWidgetItem(self.theme_list)
-            row = ThemeRow(theme, list(theme.colors), self)
-            item.setSizeHint(QSize(0, row.sizeHint().height()))
+            entry = ThemeRow(theme, list(theme.colors), self)
+            item.setSizeHint(QSize(0, entry.sizeHint().height()))
             self.theme_list.addItem(item)
-            self.theme_list.setItemWidget(item, row)
+            self.theme_list.setItemWidget(item, entry)
         self.theme_list.setCurrentRow(
             max(0, next((i for i, t in enumerate(self.themes) if t.id == self._settings.theme), 0))
         )
@@ -226,13 +226,13 @@ class SettingsDialog(QDialog):
         # effects -----------------------------------------------------------
         column.addWidget(self._section("effects"))
         card, inner = self._card()
-        self.effects = []
+        self.effects: list[EffectRow] = []
         for name in fx.ORDER:
-            row = EffectRow(name, self)
-            row.changed.connect(self._emit)
-            self.effects.append(row)
-            inner.addWidget(row)
-        caveats = [fx.warning(n) for n in fx.ORDER if fx.warning(n)]
+            effect = EffectRow(name, self)
+            effect.changed.connect(self._emit)
+            self.effects.append(effect)
+            inner.addWidget(effect)
+        caveats = [caveat for n in fx.ORDER if (caveat := fx.warning(n))]
         if caveats:
             note = QLabel(" ".join(caveats), self)
             note.setObjectName("hint")
