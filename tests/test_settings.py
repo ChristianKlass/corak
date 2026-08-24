@@ -18,6 +18,8 @@ _app = QGuiApplication.instance() or QGuiApplication([])
 
 from corak import desktop  # noqa: E402
 from corak import scheduler  # noqa: E402
+from corak import themes  # noqa: E402
+from corak.themes import Theme  # noqa: E402
 from corak.config import Settings, load, save  # noqa: E402
 from corak.engine import Engine  # noqa: E402
 from corak.patterns import names  # noqa: E402
@@ -32,7 +34,7 @@ from test_wallpaper import screen  # noqa: E402
 
 class TestSettings(unittest.TestCase):
     def test_round_trip(self) -> None:
-        original = Settings(interval_minutes=45, patterns=["waves"], effects={"calm": 0.5}, keep=3)
+        original = Settings(interval_minutes=45, patterns=["waves"], theme="tide", keep=3)
         with tempfile.TemporaryDirectory() as tmp:
             path = save(original, Path(tmp) / "settings.json")
             self.assertEqual(load(path), original.normalised())
@@ -63,8 +65,44 @@ class TestSettings(unittest.TestCase):
         self.assertEqual(Settings(interval_minutes=10**6).normalised().interval_minutes, 24 * 60)
 
     def test_effect_strengths_are_clamped_and_zeroes_dropped(self) -> None:
-        effects = Settings(effects={"calm": 5.0, "grain": 0.0, "darken": -1}).normalised().effects
-        self.assertEqual(effects, {"calm": 1.0})
+        theme = Theme.from_dict(
+            {"id": "x", "name": "X", "effects": {"calm": 5.0, "grain": 0.0, "darken": -1}}
+        )
+        self.assertEqual(theme.effects, {"calm": 1.0})
+
+    def test_a_deleted_theme_falls_back_rather_than_failing(self) -> None:
+        self.assertEqual(Settings(theme="gone").normalised().theme, "quiet")
+
+    def test_derived_themes_survive_a_round_trip(self) -> None:
+        derived = themes.get("tide").derive(effects={"calm": 0.2}, scale=1.4)
+        stored = Settings().with_theme(derived).normalised()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = save(stored, Path(tmp) / "settings.json")
+            loaded = load(path)
+        self.assertEqual(loaded.theme, derived.id)
+        self.assertEqual(loaded.active_theme(), derived)
+        self.assertEqual(loaded.active_theme().derived_from, "tide")
+
+    def test_a_corrupt_custom_theme_is_skipped_not_fatal(self) -> None:
+        settings = Settings(custom_themes=[{"id": "bad", "name": "B", "chroma": "nonsense"}])
+        self.assertEqual(settings.themes(), [])
+
+    def test_deriving_twice_keeps_pointing_at_the_original(self) -> None:
+        once = themes.get("ember").derive(scale=1.1)
+        twice = once.derive(scale=1.2)
+        self.assertEqual(twice.derived_from, "ember")
+
+    def test_a_derived_theme_replaces_its_namesake(self) -> None:
+        first = themes.get("bloom").derive(scale=1.1)
+        second = themes.get("bloom").derive(scale=1.9)
+        settings = Settings().with_theme(first).with_theme(second)
+        self.assertEqual(len(settings.custom_themes), 1)
+        self.assertEqual(settings.active_theme().scale, 1.9)
+
+    def test_choosing_a_built_in_does_not_store_a_copy(self) -> None:
+        settings = Settings().with_theme(themes.get("signal"))
+        self.assertEqual(settings.custom_themes, [])
+        self.assertEqual(settings.theme, "signal")
 
     def test_a_partial_write_cannot_replace_the_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

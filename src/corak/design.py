@@ -15,9 +15,14 @@ class Design:
     pattern: str
     pattern_seed: int
     palette_seed: int
+    # Part of the identity, not a setting: the same seeds under a different
+    # theme are a different image, so a history row without it is not
+    # reproducible.
+    theme: str = ""
 
     def slug(self) -> str:
-        return f"{self.pattern}-{self.pattern_seed:06x}-{self.palette_seed:06x}"
+        stem = f"{self.pattern}-{self.pattern_seed:06x}-{self.palette_seed:06x}"
+        return f"{self.theme}-{stem}" if self.theme else stem
 
     def __str__(self) -> str:
         return self.slug()

@@ -19,7 +19,9 @@ _app = QGuiApplication.instance() or QGuiApplication([])
 from corak.design import Design, History  # noqa: E402
 from corak.engine import Engine, NoPatternsEnabled, UnknownPattern  # noqa: E402
 from corak.patterns import names  # noqa: E402
+from corak.palette import Palette, to_oklch  # noqa: E402
 from corak.session import Session  # noqa: E402
+from corak import themes  # noqa: E402
 
 
 class TestEngine(unittest.TestCase):
@@ -111,6 +113,130 @@ class TestSession(unittest.TestCase):
         after = session.repattern()
         self.assertEqual(after.pattern, "waves")
         self.assertNotEqual(after.pattern_seed, before.pattern_seed)
+
+
+class TestThemes(unittest.TestCase):
+    """A theme constrains what the seed is allowed to produce."""
+
+    def setUp(self) -> None:
+        self.engine = Engine()
+
+    def test_design_records_which_theme_made_it(self) -> None:
+        design = self.engine.new_design(random.Random(1), theme=themes.get("ember"))
+        self.assertEqual(design.theme, "ember")
+        self.assertIn("ember", design.slug())
+
+    def test_hue_stays_inside_the_theme_range(self) -> None:
+        tide = themes.get("tide")
+        for seed in range(25):
+            palette = Palette.for_theme(seed, tide)
+            with self.subTest(seed=seed):
+                self.assertGreaterEqual(palette.base_hue, tide.hue_range[0])
+                self.assertLessEqual(palette.base_hue, tide.hue_range[1])
+
+    def test_a_wrapping_hue_range_is_allowed(self) -> None:
+        # Ember runs from 0.94 past 1.0 to 0.14, which must wrap rather than
+        # collapse to an empty range.
+        hues = {round(Palette.for_theme(s, themes.get("ember")).base_hue, 3) for s in range(40)}
+        self.assertTrue(any(h > 0.9 for h in hues))
+        self.assertTrue(any(h < 0.15 for h in hues))
+
+    def test_every_ramp_colour_stays_inside_the_theme_range(self) -> None:
+        # Constraining only the base hue is not enough: a split scheme reaches
+        # 0.58 of a turn away, which would carry a blue theme into brown.
+        tide = themes.get("tide")
+        low, high = tide.hue_range
+        for seed in range(30):
+            palette = Palette.for_theme(seed, tide)
+            for colour in palette.colors:
+                lightness, chroma, hue = to_oklch(colour)
+                if chroma < 0.01:
+                    continue  # a near-neutral has no meaningful hue
+                with self.subTest(seed=seed, scheme=palette.scheme):
+                    distance = min(abs(hue - low), abs(hue - high), 1 - abs(hue - low))
+                    inside = low - 0.02 <= hue <= high + 0.02
+                    self.assertTrue(inside, f"hue {hue:.3f} outside {low}-{high}")
+
+    def test_chroma_stays_inside_the_theme_range(self) -> None:
+        slate = themes.get("slate")
+        for seed in range(20):
+            chroma = max(to_oklch(c)[1] for c in Palette.for_theme(seed, slate).colors)
+            with self.subTest(seed=seed):
+                # Gamut fitting can only reduce chroma, never raise it.
+                self.assertLessEqual(chroma, slate.chroma[1] * 1.2)
+
+    def test_a_light_theme_never_reaches_the_khaki_band(self) -> None:
+        # Between roughly 0.20 and 0.40 of a turn, anything below a perceptual
+        # lightness of about 0.75 reads as khaki rather than pastel.
+        linen = themes.get("linen")
+        low, high = linen.hue_range
+        for seed in range(120):
+            for colour in Palette.for_theme(seed, linen).colors:
+                lightness, chroma, hue = to_oklch(colour)
+                if chroma < 0.01:
+                    continue
+                with self.subTest(seed=seed):
+                    khaki = 0.15 <= hue <= 0.42 and lightness < 0.75
+                    self.assertFalse(khaki, f"hue {hue:.3f} at L {lightness:.3f}")
+
+    def test_a_light_background_stays_lighter_than_the_ramp(self) -> None:
+        linen = themes.get("linen")
+        for seed in range(40):
+            palette = Palette.for_theme(seed, linen)
+            lightest = max(to_oklch(c)[0] for c in palette.colors)
+            with self.subTest(seed=seed):
+                self.assertGreaterEqual(to_oklch(palette.background)[0], lightest - 0.02)
+
+    def test_calm_does_not_override_a_theme_that_asked_to_be_light(self) -> None:
+        # Otherwise the background follows the forced dark palette while the
+        # shapes follow the theme's lightness, and the gaps come out black.
+        linen = themes.get("linen")
+        engine = Engine()
+        design = engine.new_design(random.Random(3), pattern="hexagons", theme=linen)
+        image = engine.render(design, 200, 120, {"calm": 0.4})
+        corner = image.pixelColor(1, 1)
+        self.assertGreater(to_oklch(corner)[0], 0.4)
+
+    def test_calm_still_darkens_an_unconstrained_palette(self) -> None:
+        engine = Engine()
+        design = engine.new_design(random.Random(3), pattern="hexagons")
+        light = Palette(design.palette_seed, dark=False)
+        forced = Palette(design.palette_seed, dark=True)
+        self.assertLess(to_oklch(forced.background)[0], to_oklch(light.background)[0])
+
+    def test_theme_narrows_the_pattern_choice(self) -> None:
+        slate = themes.get("slate")
+        chosen = {
+            self.engine.new_design(random.Random(s), theme=slate).pattern for s in range(30)
+        }
+        self.assertTrue(chosen <= set(slate.patterns))
+
+    def test_disabled_patterns_still_win_over_the_theme(self) -> None:
+        engine = Engine(enabled=["waves"])
+        design = engine.new_design(random.Random(0), theme=themes.get("slate"))
+        self.assertEqual(design.pattern, "waves")
+
+    def test_theme_scale_changes_feature_size(self) -> None:
+        design = self.engine.new_design(random.Random(4), pattern="hexagons")
+        big = self.engine.render(replace_theme(design, "slate"), 300, 200)
+        small = self.engine.render(replace_theme(design, "signal"), 300, 200)
+        self.assertNotEqual(big, small)
+
+    def test_the_same_design_under_a_theme_is_reproducible(self) -> None:
+        design = self.engine.new_design(random.Random(7), theme=themes.get("bloom"))
+        self.assertEqual(
+            self.engine.render(design, 200, 120), self.engine.render(design, 200, 120)
+        )
+
+    def test_arrow_actions_keep_the_theme(self) -> None:
+        session = Session(Engine(), random.Random(2), theme=themes.get("tide"))
+        for action in (session.recolour, session.repattern, session.regenerate):
+            with self.subTest(action=action.__name__):
+                self.assertEqual(action().theme, "tide")
+
+
+def replace_theme(design: Design, theme: str) -> Design:
+    return Design(design.pattern, design.pattern_seed, design.palette_seed, theme)
 
 
 if __name__ == "__main__":

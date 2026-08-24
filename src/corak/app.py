@@ -25,8 +25,9 @@ def run(argv: list[str] | None = None) -> int:
 
     settings = load()
     store = Store()
-    engine = Engine(settings.patterns)
-    window = MainWindow(Session(engine), settings, store, primary_size())
+    engine = Engine(settings.patterns, settings.themes())
+    session = Session(engine, theme=settings.active_theme())
+    window = MainWindow(session, settings, store, primary_size())
 
     tray = None
     if QSystemTrayIcon.isSystemTrayAvailable():

@@ -160,6 +160,10 @@ class Palette:
         seed: int,
         dark: bool | None = None,
         scheme: str | None = None,
+        schemes: Sequence[str] | None = None,
+        hue_range: tuple[float, float] | None = None,
+        chroma_range: tuple[float, float] | None = None,
+        lightness_range: tuple[float, float] | None = None,
     ) -> None:
         self.seed = seed
         rng = random.Random(seed)
@@ -170,17 +174,32 @@ class Palette:
         self.dark = roll < 0.68 if dark is None else dark
 
         if scheme is None:
-            scheme = rng.choices(
-                list(SCHEME_WEIGHTS), weights=list(SCHEME_WEIGHTS.values())
-            )[0]
+            allowed = [s for s in (schemes or ()) if s in SCHEMES] or list(SCHEME_WEIGHTS)
+            scheme = rng.choices(allowed, weights=[SCHEME_WEIGHTS[s] for s in allowed])[0]
         elif scheme not in SCHEMES:
             raise ValueError(f"unknown scheme: {scheme}")
         self.scheme = scheme
 
-        self.base_hue = rng.random()
         offsets = SCHEMES[scheme]
-        self.chroma = rng.uniform(0.045, 0.16)
-        lo, hi = (0.32, 0.72) if self.dark else (0.55, 0.90)
+        if hue_range:
+            # The range is the whole colour budget, not just where the base hue
+            # may sit: a split scheme's offsets reach 0.58 of a turn away, which
+            # would carry a blue theme into brown. The offsets are compressed to
+            # fit, and the base is placed so every one of them lands inside.
+            low, high = hue_range
+            span = high - low
+            reach = max(offsets) - min(offsets)
+            if reach > span:
+                factor = span / reach
+                offsets = tuple(o * factor for o in offsets)
+            self.base_hue = rng.uniform(low - min(offsets), high - max(offsets)) % 1.0
+        else:
+            self.base_hue = rng.random()
+        self.chroma = rng.uniform(*(chroma_range or (0.045, 0.16)))
+        # Below roughly 0.75 the yellow-green quarter of the wheel turns to
+        # khaki, so a pale theme has to say where its lightness sits rather
+        # than inheriting a range chosen for dark ones.
+        lo, hi = lightness_range or ((0.32, 0.72) if self.dark else (0.62, 0.93))
 
         self.colors = []
         for i in range(RAMP_STOPS):
@@ -196,8 +215,13 @@ class Palette:
                 )
             )
 
+        # A light background sits just above its own ramp rather than at a
+        # fixed near-white: pinning it to white makes any light theme glare,
+        # whatever lightness its shapes were given.
         self.background = oklch(
-            rng.uniform(0.13, 0.21) if self.dark else rng.uniform(0.90, 0.96),
+            rng.uniform(0.13, 0.21)
+            if self.dark
+            else min(0.985, hi + rng.uniform(0.02, 0.08)),
             self.chroma * 0.45,
             self.base_hue + offsets[0],
         )
@@ -207,6 +231,18 @@ class Palette:
         width = rng.uniform(0.55, 1.0)
         self._t0 = rng.uniform(0.0, 1.0 - width)
         self._t1 = self._t0 + width
+
+    @classmethod
+    def for_theme(cls, seed: int, theme, dark: bool | None = None) -> "Palette":
+        """A palette obeying a theme's colour constraints."""
+        return cls(
+            seed,
+            dark=theme.dark if dark is None else dark,
+            schemes=theme.schemes or None,
+            hue_range=theme.hue_range,
+            chroma_range=theme.chroma,
+            lightness_range=theme.lightness,
+        )
 
     @classmethod
     def from_hex(cls, codes: Iterable[str], dark: bool | None = None) -> "Palette":

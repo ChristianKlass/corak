@@ -17,6 +17,7 @@ from .design import Design
 from .frame import Frame
 from .palette import Palette
 from .patterns import REGISTRY, names
+from .themes import Theme, get as get_theme
 
 SEED_MAX = 1 << 24
 
@@ -30,8 +31,17 @@ class NoPatternsEnabled(RuntimeError):
 
 
 class Engine:
-    def __init__(self, enabled: Iterable[str] | None = None) -> None:
+    def __init__(
+        self,
+        enabled: Iterable[str] | None = None,
+        themes: Sequence[Theme] = (),
+    ) -> None:
         self.enabled: list[str] = list(enabled) if enabled is not None else names()
+        # User-derived themes, which `get` does not know about on its own.
+        self.themes: Sequence[Theme] = tuple(themes)
+
+    def theme_for(self, design: Design) -> Theme:
+        return get_theme(design.theme, self.themes)
 
     def available(self) -> Sequence[str]:
         return names()
@@ -41,10 +51,22 @@ class Engine:
         rng: random.Random,
         pattern: str | None = None,
         palette_seed: int | None = None,
+        theme: Theme | str | None = None,
     ) -> Design:
         """Build a design, optionally holding the pattern or the palette fixed."""
+        resolved = theme if isinstance(theme, Theme) else get_theme(theme or "", self.themes)
+        if theme is None:
+            theme_id = ""
+        else:
+            theme_id = resolved.id
+
         if pattern is None:
             choices = [p for p in self.enabled if p in REGISTRY]
+            if theme is not None and resolved.patterns:
+                # A theme's pattern list narrows what is enabled rather than
+                # replacing it, so disabling a pattern still means disabled.
+                narrowed = [p for p in choices if p in resolved.patterns]
+                choices = narrowed or choices
             if not choices:
                 raise NoPatternsEnabled("no enabled pattern is available")
             pattern = rng.choice(choices)
@@ -54,6 +76,7 @@ class Engine:
             pattern=pattern,
             pattern_seed=rng.randrange(SEED_MAX),
             palette_seed=rng.randrange(SEED_MAX) if palette_seed is None else palette_seed,
+            theme=theme_id,
         )
 
     def render(
@@ -70,16 +93,30 @@ class Engine:
             raise UnknownPattern(design.pattern) from exc
 
         effects = dict(effects or {})
-        # The quiet mode only works against a dark ground; letting it land on a
-        # near-white palette produces a washed grey rather than a calm one.
-        palette = Palette(design.palette_seed, dark=True if effects.get("calm") else None)
+        theme = self.theme_for(design) if design.theme else None
+        # The quiet mode works poorly against a light ground, so on an
+        # unconstrained palette it forces a dark one. A theme that states which
+        # it wants overrides that: otherwise its background would go dark while
+        # its shapes stayed light.
+        undecided = theme is None or theme.dark is None
+        forced_dark = True if (effects.get("calm") and undecided) else None
+        palette = (
+            Palette.for_theme(design.palette_seed, theme, dark=forced_dark)
+            if theme is not None
+            else Palette(design.palette_seed, dark=forced_dark)
+        )
         image = QImage(width, height, QImage.Format.Format_RGB32)
         image.fill(palette.background)
 
         painter = QPainter(image)
         try:
             painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-            frame = Frame(width, height, px_per_mm) if px_per_mm else Frame(width, height)
+            frame = Frame(
+                width,
+                height,
+                px_per_mm or Frame(width, height).px_per_mm,
+                theme.scale if theme is not None else 1.0,
+            )
             draw(painter, frame, random.Random(design.pattern_seed), palette)
         finally:
             painter.end()

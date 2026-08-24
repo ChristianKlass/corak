@@ -42,6 +42,7 @@ ln -sf "$PWD/.venv/bin/corak" ~/.local/bin/corak
 | ← | Same pattern, new colours |
 | → | Same colours, new pattern |
 | ↓ | Back to the previous design |
+| T | Next theme (Shift+T for the previous one) |
 | C | Toggle *calm* |
 | D | Toggle *darken* |
 | V | Toggle *vignette* |
@@ -82,6 +83,45 @@ to defaults, so a file from a newer version does not stop an older one starting.
 Every generated wallpaper is logged to `$XDG_DATA_HOME/corak/history.db`, one
 row per screen, holding the pattern, both seeds, the scheme, the effects and the
 image path — enough to rebuild any past wallpaper exactly.
+
+## Themes
+
+A theme is a set of constraints, not a wallpaper. It pins what gives an image
+its character — which patterns, which part of the colour wheel, how saturated,
+how large the shapes, which effects — and leaves the rest to the seed. Every
+image a theme produces is different; they all look related.
+
+| Theme | |
+| --- | --- |
+| **Quiet** | Dark and barely there. Made to sit behind windows. |
+| **Slate** | Almost colourless, large shapes, very low contrast. |
+| **Ember** | Reds through amber, dark, with the edges falling away. |
+| **Tide** | Cool blues and teals, softly graded. |
+| **Linen** | Soft and muted. Lighter than the rest without lighting up the room. |
+| **Signal** | Loud. Full chroma, opposing hues, nothing held back. |
+
+Themes are chosen rather than built. Starting from nothing means answering a
+dozen questions before seeing anything, so the settings window adjusts a theme
+that already works and saves the result as a variant — the original stays put,
+and *Reset to original* puts the variant back. Matching the original exactly
+drops the variant rather than storing an identical copy.
+
+A theme can also pin the perceptual lightness its ramp spans, which is what
+keeps a light theme usable. Between roughly 0.12 and 0.45 of a turn around the
+hue wheel, anything below a lightness of about 0.75 reads as khaki — but
+escaping upward gives a near-white wallpaper, which on a large screen is a lamp.
+A light theme instead sits at middling lightness and steers around that part of
+the wheel. Its background follows its own ramp rather than a fixed near-white,
+so it cannot glare regardless of where the ramp sits.
+
+A theme's hue range is the whole colour budget, not just where the base hue may
+sit. A split-complementary scheme reaches 0.58 of a turn from its base, which
+would carry a blue theme into brown, so a constrained theme has its scheme
+offsets compressed to fit and its base placed so all of them land inside.
+
+The theme is part of a `Design`, not a setting applied to one: the same seeds
+under a different theme are a different image, so a history row without it could
+not be reproduced.
 
 ## Colour
 

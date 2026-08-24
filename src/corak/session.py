@@ -6,14 +6,21 @@ import random
 
 from .design import Design, History
 from .engine import Engine
+from .themes import Theme
 
 
 class Session:
-    def __init__(self, engine: Engine, rng: random.Random | None = None) -> None:
+    def __init__(
+        self,
+        engine: Engine,
+        rng: random.Random | None = None,
+        theme: Theme | None = None,
+    ) -> None:
         self.engine = engine
         self.rng = rng or random.Random()
+        self.theme = theme
         self.history = History()
-        self._set(self.engine.new_design(self.rng))
+        self._set(self.engine.new_design(self.rng, theme=theme))
 
     def _set(self, design: Design) -> Design:
         self.history.push(design)
@@ -27,13 +34,18 @@ class Session:
 
     def regenerate(self) -> Design:
         """Up: a new pattern and a new palette."""
-        return self._set(self.engine.new_design(self.rng))
+        return self._set(self.engine.new_design(self.rng, theme=self.theme))
 
     def recolour(self) -> Design:
         """Left: same pattern and geometry, new colours."""
         current = self.current
         return self._set(
-            Design(current.pattern, current.pattern_seed, self.rng.randrange(1 << 24))
+            Design(
+                current.pattern,
+                current.pattern_seed,
+                self.rng.randrange(1 << 24),
+                current.theme,
+            )
         )
 
     def repattern(self) -> Design:
@@ -44,8 +56,18 @@ class Session:
         # its geometry instead of silently doing nothing.
         pattern = self.rng.choice(choices) if choices else current.pattern
         return self._set(
-            self.engine.new_design(self.rng, pattern=pattern, palette_seed=current.palette_seed)
+            self.engine.new_design(
+                self.rng,
+                pattern=pattern,
+                palette_seed=current.palette_seed,
+                theme=self.theme,
+            )
         )
+
+    def set_theme(self, theme: Theme | None) -> Design:
+        """Switch themes and generate under the new one."""
+        self.theme = theme
+        return self.regenerate()
 
     def previous(self) -> Design | None:
         """Down: step back through what has already been seen."""

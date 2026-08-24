@@ -17,12 +17,15 @@ from PySide6.QtWidgets import (
 
 from .. import effects as fx
 from .. import scheduler
+from dataclasses import replace
+
 from ..config import Settings, save
 from ..design import Design
 from ..rotation import describe, rotate
 from ..screens import primary_size
 from ..session import Session
 from ..store import Store
+from ..themes import all_themes
 from ..wallpaper import WallpaperError
 from .preview import PreviewWidget
 from .settings import SettingsDialog
@@ -55,7 +58,7 @@ class MainWindow(QMainWindow):
         self.settings = settings
         self.store = store
         self.target = target or primary_size()
-        self.effects = dict(settings.effects)
+        self.effects = dict(settings.active_theme().effects)
         self._warning = ""
 
         self.setWindowTitle("corak")
@@ -112,6 +115,7 @@ class MainWindow(QMainWindow):
             + (f"   [{active}]" if active else "")
             + (f"   !  {self._warning}" if self._warning else "")
         )
+        self.setWindowTitle(f"corak - {self.settings.active_theme().name}")
         self.design_changed.emit(design)
 
     def apply_wallpaper(self) -> None:
@@ -119,14 +123,13 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"rendering {design} at native size...")
         self.apply_button.setEnabled(False)
         try:
-            settings = Settings(
-                interval_minutes=self.settings.interval_minutes,
-                patterns=self.settings.patterns,
+            _, targets = rotate(
+                self.settings,
+                self.session.engine,
+                self.store,
+                design=design,
                 effects=self.effects,
-                keep=self.settings.keep,
-                rotate=self.settings.rotate,
             )
-            _, targets = rotate(settings, self.session.engine, self.store, design=design)
         except WallpaperError as exc:
             self.statusBar().showMessage(f"could not set wallpaper: {exc}", 8000)
         else:
@@ -140,13 +143,23 @@ class MainWindow(QMainWindow):
             return
         self.settings = dialog.result_settings()
         save(self.settings)
+        theme = self.settings.active_theme()
         self.session.engine.enabled = list(self.settings.patterns)
-        self.effects = dict(self.settings.effects)
-        self._warning = "; ".join(
-            filter(None, (fx.warning(name) for name in self.effects))
-        )
+        self.session.engine.themes = tuple(self.settings.themes())
+        self.effects = dict(theme.effects)
         self._apply_schedule()
-        self._show(self.session.current)
+        self._show(self.session.set_theme(theme))
+        return
+    def cycle_theme(self, step: int = 1) -> None:
+        """Move to the next theme and generate under it."""
+        themes = all_themes(self.settings.themes())
+        current = self.settings.active_theme()
+        index = next((i for i, t in enumerate(themes) if t.id == current.id), 0)
+        theme = themes[(index + step) % len(themes)]
+        self.settings = replace(self.settings, theme=theme.id)
+        self.effects = dict(theme.effects)
+        self._warning = ""
+        self._show(self.session.set_theme(theme))
 
     def _apply_schedule(self) -> None:
         try:
@@ -187,6 +200,8 @@ class MainWindow(QMainWindow):
             self._show(self.session.previous())
         elif key in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
             self.apply_wallpaper()
+        elif key == Qt.Key.Key_T:
+            self.cycle_theme(-1 if event.modifiers() & Qt.KeyboardModifier.ShiftModifier else 1)
         elif key in EFFECT_KEYS:
             self._toggle(EFFECT_KEYS[key])
         elif key in (Qt.Key.Key_Escape, Qt.Key.Key_Q):

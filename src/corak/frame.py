@@ -21,6 +21,9 @@ class Frame:
     width: int
     height: int
     px_per_mm: float = NOMINAL_PX_PER_MM
+    # A theme-wide multiplier on every feature size, so a theme can read as
+    # bold or as fine without each pattern needing a setting of its own.
+    scale: float = 1.0
 
     @property
     def aspect(self) -> float:
@@ -35,8 +38,8 @@ class Frame:
         return math.hypot(self.width, self.height)
 
     def mm(self, millimetres: float) -> float:
-        """Millimetres as pixels on this surface."""
-        return millimetres * self.px_per_mm
+        """Millimetres as pixels on this surface, after the theme's scale."""
+        return millimetres * self.px_per_mm * self.scale
 
     def count(self, millimetres: float, across: int | None = None) -> int:
         """How many features of the given size span the width, or the height."""

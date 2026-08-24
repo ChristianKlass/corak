@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS designs (
     pattern       TEXT    NOT NULL,
     pattern_seed  INTEGER NOT NULL,
     palette_seed  INTEGER NOT NULL,
+    theme         TEXT,
     scheme        TEXT,
     effects       TEXT,
     screen        TEXT,
@@ -62,7 +63,15 @@ class Store:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._connection = sqlite3.connect(str(self.path))
         self._connection.executescript(SCHEMA)
+        self._migrate()
         self._connection.commit()
+
+    def _migrate(self) -> None:
+        """Add columns a database written by an earlier version is missing."""
+        existing = {row[1] for row in self._connection.execute("PRAGMA table_info(designs)")}
+        for column, definition in (("theme", "TEXT"),):
+            if column not in existing:
+                self._connection.execute(f"ALTER TABLE designs ADD COLUMN {column} {definition}")
 
     def close(self) -> None:
         self._connection.close()
@@ -89,6 +98,7 @@ class Store:
                 design.pattern,
                 design.pattern_seed,
                 design.palette_seed,
+                design.theme,
                 scheme,
                 payload,
                 target.screen.name,
@@ -101,28 +111,28 @@ class Store:
         with self._connection:
             self._connection.executemany(
                 "INSERT INTO designs (created_at, pattern, pattern_seed, palette_seed,"
-                " scheme, effects, screen, width, height, path)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                " theme, scheme, effects, screen, width, height, path)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 rows,
             )
         return len(rows)
 
     def recent(self, limit: int = 20) -> list[Entry]:
         cursor = self._connection.execute(
-            "SELECT created_at, pattern, pattern_seed, palette_seed, scheme, effects,"
-            " screen, width, height, path FROM designs ORDER BY id DESC LIMIT ?",
+            "SELECT created_at, pattern, pattern_seed, palette_seed, theme, scheme,"
+            " effects, screen, width, height, path FROM designs ORDER BY id DESC LIMIT ?",
             (limit,),
         )
         return [
             Entry(
                 created_at=row[0],
-                design=Design(row[1], row[2], row[3]),
-                scheme=row[4] or "",
-                effects=json.loads(row[5]) if row[5] else {},
-                screen=row[6] or "",
-                width=row[7] or 0,
-                height=row[8] or 0,
-                path=row[9] or "",
+                design=Design(row[1], row[2], row[3], row[4] or ""),
+                scheme=row[5] or "",
+                effects=json.loads(row[6]) if row[6] else {},
+                screen=row[7] or "",
+                width=row[8] or 0,
+                height=row[9] or 0,
+                path=row[10] or "",
             )
             for row in cursor
         ]
