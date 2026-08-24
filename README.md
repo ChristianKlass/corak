@@ -101,16 +101,16 @@ its character — which patterns, which part of the colour wheel, how saturated,
 how large the shapes, which effects — and leaves the rest to the seed. Every
 image a theme produces is different; they all look related.
 
-| Theme | |
-| --- | --- |
-| **Abyssal Flare** | Heavy oceanic depths interrupted by a bright coral flash. |
-| **Art Deco** | Mid-toned architectural revival with contrasting coral and navy. |
-| **Catppuccin** | Soft pastels with a lavender bias. |
-| **Crown Jewel** | Deep and saturated gemstone hues set in heavy shadow. |
-| **Nightfall** | Cinematic evening hues driven by slate, crimson, and emerald. |
-| **Nord** | Arctic blues and muted frost. |
-| **Tokyo Night** | Cool neon blues and violets over near-black. |
-| **Vintage Cel** | Slightly brighter animated aesthetic with brass and salmon. |
+| Theme | Palette | |
+| --- | --- | --- |
+| **Abyssal Flare** | <img src="docs/palettes/abyss.png" alt="" width="150" height="13"> | Heavy oceanic depths interrupted by a bright coral flash. |
+| **Art Deco** | <img src="docs/palettes/deco.png" alt="" width="150" height="13"> | Mid-toned architectural revival with contrasting coral and navy. |
+| **Catppuccin** | <img src="docs/palettes/catppuccin.png" alt="" width="150" height="13"> | Soft pastels with a lavender bias. |
+| **Crown Jewel** | <img src="docs/palettes/jewel.png" alt="" width="150" height="13"> | Deep and saturated gemstone hues set in heavy shadow. |
+| **Nightfall** | <img src="docs/palettes/nightfall.png" alt="" width="150" height="13"> | Cinematic evening hues driven by slate, crimson, and emerald. |
+| **Nord** | <img src="docs/palettes/nord.png" alt="" width="150" height="13"> | Arctic blues and muted frost, from the editor scheme. |
+| **Tokyo Night** | <img src="docs/palettes/tokyo.png" alt="" width="150" height="13"> | Cool neon blues and violets over near-black. |
+| **Vintage Cel** | <img src="docs/palettes/vintage.png" alt="" width="150" height="13"> | Slightly brighter animated aesthetic with brass and salmon. |
 
 ## Colour
 
