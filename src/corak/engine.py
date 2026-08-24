@@ -125,5 +125,12 @@ class Engine:
         if effects:
             # Seeded from the design so grain is part of the reproducible image
             # rather than something that changes on every redraw.
-            fx.apply_all(image, effects, random.Random(design.pattern_seed ^ 0x5F5E1))
+            fx.apply_all(
+                image,
+                effects,
+                random.Random(design.pattern_seed ^ 0x5F5E1),
+                # A theme that supplies its own colours has already chosen how
+                # saturated it wants to be.
+                desaturate_by=0.25 if (theme is not None and theme.colors) else 1.0,
+            )
         return image

@@ -22,10 +22,15 @@ Each theme is an object with exactly these keys:
 Rules that matter:
 
 - These are desktop wallpapers, 3440x1440, sitting behind text and windows all
-  day. They must not compete with the foreground. Nothing near-white, nothing
-  fully saturated, no theme whose colours are all close to equally bright.
-- "calm" desaturates and compresses the tonal range. Use 0.4 to 0.7 on anything
-  that would otherwise be busy or bright.
+  day. They must not compete with the foreground. Nothing near-white, no theme
+  whose colours are all close to equally bright.
+- Restraint means dark and low-contrast, NOT desaturated. A wallpaper that is
+  merely grey is a failure. Give each theme at least one colour with real
+  saturation in it and let the rest be quiet around it. Two or three of the
+  eight should be recognisably a colour from across the room.
+- "calm" compresses the tonal range. Use 0.3 to 0.5 on anything that would
+  otherwise be busy or bright, and leave it off entirely on a theme that is
+  already dark and low-contrast.
 - Colours are interpolated between in order, so consecutive entries should be
   neighbours. Avoid a palette that jumps from one hue to its opposite between
   two adjacent entries.

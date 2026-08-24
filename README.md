@@ -223,6 +223,11 @@ nominal 96 dpi is assumed.
 | `vignette` | Darkens toward the edges, shaped to the frame's aspect |
 | `grain` | Overlays fine monochrome noise — **expensive**, see below |
 
+`calm` desaturates far less on a theme that supplies its own colours. That step
+is there to rein in a generated palette, which can come out garish; a palette
+somebody chose is already at the saturation they wanted, and taking another
+third out of it leaves grey.
+
 `calm` is the quiet mode. What makes a wallpaper distracting is local contrast
 between neighbouring shapes rather than overall brightness, so dimming alone
 leaves a busy image busy; `calm` flattens shape-to-shape contrast instead, and

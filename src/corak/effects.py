@@ -90,7 +90,7 @@ def fx_darken(image: QImage, strength: float, rng: random.Random) -> None:
     scale_range(image, 1.0 - 0.62 * strength, 0.0)
 
 
-def fx_calm(image: QImage, strength: float, rng: random.Random) -> None:
+def fx_calm(image: QImage, strength: float, rng: random.Random, desaturate_by: float = 1.0) -> None:
     """The quiet mode: reduce what competes with the foreground.
 
     What makes a wallpaper distracting is local contrast between neighbouring
@@ -99,7 +99,7 @@ def fx_calm(image: QImage, strength: float, rng: random.Random) -> None:
     with it, which flattens shape-to-shape contrast while the pattern stays
     legible.
     """
-    desaturate(image, 0.55 * strength)
+    desaturate(image, 0.55 * strength * desaturate_by)
     scale_range(image, 1.0 - 0.52 * strength, 0.05 * strength)
 
 
@@ -158,9 +158,24 @@ APPLY = {
 }
 
 
-def apply_all(image: QImage, effects: Mapping[str, float], rng: random.Random) -> None:
-    """Apply effects to the image in place, in the canonical order."""
+def apply_all(
+    image: QImage,
+    effects: Mapping[str, float],
+    rng: random.Random,
+    desaturate_by: float = 1.0,
+) -> None:
+    """Apply effects to the image in place, in the canonical order.
+
+    `desaturate_by` scales back the quiet mode's desaturation. It exists because
+    that step is there to rein in a generated palette, which can come out
+    garish; a palette somebody chose is already at the saturation they wanted,
+    and taking a third of it out again leaves grey.
+    """
     for name in ORDER:
         strength = effects.get(name)
-        if strength:
+        if not strength:
+            continue
+        if name == "calm":
+            fx_calm(image, float(strength), rng, desaturate_by)
+        else:
             APPLY[name](image, float(strength), rng)
