@@ -144,6 +144,12 @@ analogous, complementary, split-complementary and triad. The tight schemes are
 weighted more heavily — a triad spread across a whole screen tends to look like
 a test card. `Palette.from_hex` accepts explicit colours instead.
 
+Fields are evaluated over the unit square and normalised to span 0 to 1 across
+it. Without that a low-frequency field completes less than one cycle over the
+image and sits near-constant at whatever its phases happen to give — often
+pinned to one end, so every shape takes the same colour and a whole palette
+renders as its darkest entry.
+
 Hue and lightness are chosen independently, from spatial fields at different
 scales: hue drifts slowly across the whole image while lightness varies shape to
 shape. Driving both from one field is what turns a multi-hue scheme into

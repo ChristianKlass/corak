@@ -50,11 +50,11 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     # Colour decisions follow the palette seed, placement follows the pattern
     # seed, so recolouring and relaying out are genuinely separate.
     colour_rng = pal.colour_rng()
-    hue_field = field(colour_rng, terms=2)
-    density = field(rng, terms=2)
+    hue_field = field(colour_rng, terms=2, frequency=0.6)
+    density = field(rng, terms=2, frequency=0.8)
     light = rng.uniform(0, math.tau)
 
-    count = rng.randint(16, 40)
+    count = rng.randint(22, 48)
     largest = frame.mm(rng.uniform(45.0, 105.0))
     smallest = largest * rng.uniform(0.10, 0.22)
     # How sharply size falls away with distance. Without the bias most shapes
@@ -66,7 +66,7 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     # small adjacent cells that turned a multi-hue scheme into confetti.
     spread = colour_rng.choice((0.05, 0.15, 0.45, 0.8))
     # Enough to push the far shapes back, not enough to erase them.
-    haze = colour_rng.uniform(0.25, 0.55) * depth
+    haze = colour_rng.uniform(0.18, 0.42) * depth
 
     shapes = []
     for _ in range(count):
@@ -74,7 +74,7 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
             x, y = rng.uniform(0, w), rng.uniform(0, h)
             # Clustered rather than uniform: shapes gather where the density
             # field is high and leave the rest of the frame open.
-            if density(x / w * 2.2, y / h * 2.2) > threshold:
+            if density(x / w, y / h) > threshold:
                 break
         else:
             continue
@@ -130,8 +130,8 @@ def _paint(painter, band, frame, pal, rng, light, spread, haze, hue_field, strok
     )
 
     for z, x, y, size, path in placed:
-        hue_t = hue_field(x / w * 1.3, y / h * 1.3) + rng.uniform(-spread, spread)
-        color = pal.shade(hue_t, 0.30 + 0.55 * z + rng.uniform(-0.07, 0.07))
+        hue_t = hue_field(x / w, y / h) + rng.uniform(-spread, spread)
+        color = pal.shade(hue_t, 0.18 + 0.78 * z + rng.uniform(-0.06, 0.06))
         # Aerial perspective: distance pulls a shape toward the background, so
         # the far ones sit back instead of competing with the near ones.
         color = blend_direct(pal.background, color, 1.0 - haze * (1.0 - z))

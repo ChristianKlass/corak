@@ -353,9 +353,15 @@ class Palette:
             # chooses which of its colours to use and the fast one only shades
             # that colour up or down. Letting the fast field pick the colour
             # instead would jump between palette entries shape to shape.
-            base = self.ramp(hue_t)
+            # Position along a given palette follows both inputs. Taking hue
+            # alone left a near shape no way to reach the pale end, so a
+            # scattered pattern sampled the middle of every palette and came
+            # out uniformly dark. Consecutive palette entries are neighbours,
+            # so letting the faster input move the position too costs nothing.
+            position = _clamp(0.6 * _clamp(hue_t) + 0.4 * _clamp(light_t))
+            base = self.ramp(position)
             lightness, c, hue = to_oklch(base)
-            return oklch(lightness + (_clamp(light_t) - 0.5) * 0.22, c * chroma, hue)
+            return oklch(lightness + (_clamp(light_t) - 0.5) * 0.10, c * chroma, hue)
         lo, hi = self._lightness
         # The same cohesion slice the ramp uses: most images look better over
         # part of the scheme than over all of it.

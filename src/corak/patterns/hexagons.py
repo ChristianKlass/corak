@@ -30,8 +30,8 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     # whole image while lightness varies shape to shape: driving both from one
     # field makes a small spatial step cross a hue boundary, and neighbouring
     # shapes jump from orange to blue.
-    hue_field = field(pal.colour_rng(), terms=2)
-    light_field = field(rng)
+    hue_field = field(pal.colour_rng(), terms=2, frequency=0.5)
+    light_field = field(rng, frequency=2.2)
     depth = frame.depth
 
     underlay(painter, frame, pal, rng, depth)
@@ -54,8 +54,8 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
         for row in range(-1, int(h / dy) + 2):
             cx = col * dx
             cy = row * dy + (dy / 2.0 if col % 2 else 0.0)
-            hue_t = hue_field(cx / w * 1.3, cy / h * 1.3)
-            light_t = light_field(cx / w * 5.0, cy / h * 5.0) + rng.uniform(-0.05, 0.05)
+            hue_t = hue_field(cx / w, cy / h)
+            light_t = light_field(cx / w, cy / h) + rng.uniform(-0.05, 0.05)
             color = pal.shade(hue_t, light_t)
             path = QPainterPath()
             path.addPolygon(QPolygonF(_corners(cx, cy, r)))
