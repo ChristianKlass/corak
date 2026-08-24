@@ -22,7 +22,7 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     drift = rng.uniform(-0.5, 0.5)
 
     painter.setPen(Qt.PenStyle.NoPen)
-    hue_base = rng.random()
+    hue_base = pal.colour_rng().random()
     painter.fillRect(0, 0, w, h, pal.shade(hue_base, 0.0))
 
     # Painted back to front as filled regions down to the bottom edge, so the

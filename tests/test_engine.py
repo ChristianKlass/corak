@@ -245,6 +245,31 @@ class TestThemes(unittest.TestCase):
             self.engine.render(design, 200, 120), self.engine.render(design, 200, 120)
         )
 
+    def test_recolour_changes_a_fixed_palette_theme(self) -> None:
+        # Themes that give explicit colours have no formula to reseed, so the
+        # left arrow used to produce a byte-identical image for every one of
+        # them.
+        fixed = themes.Theme(
+            id="fixed",
+            name="Fixed",
+            colors=("#12202b", "#2b5468", "#7fa6b8", "#d0ddE4"),
+            dark=True,
+        )
+        engine = Engine(themes=(fixed,))
+        first = Design("hexagons", 4242, 1, "fixed")
+        second = Design("hexagons", 4242, 2, "fixed")
+        self.assertNotEqual(engine.render(first, 200, 120), engine.render(second, 200, 120))
+
+    def test_recolour_does_not_move_anything(self) -> None:
+        # Colour decisions follow the palette seed and placement follows the
+        # pattern seed, so the two are genuinely separate controls.
+        engine = Engine()
+        for pattern in names():
+            with self.subTest(pattern=pattern):
+                a = engine.render(Design(pattern, 777, 1), 160, 100)
+                b = engine.render(Design(pattern, 777, 1), 160, 100)
+                self.assertEqual(a, b)
+
     def test_arrow_actions_keep_the_theme(self) -> None:
         session = Session(Engine(), random.Random(2), theme=themes.get("tide"))
         for action in (session.recolour, session.repattern, session.regenerate):

@@ -47,7 +47,10 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     depth = frame.depth
     underlay(painter, frame, pal, rng, depth)
 
-    hue_field = field(rng, terms=2)
+    # Colour decisions follow the palette seed, placement follows the pattern
+    # seed, so recolouring and relaying out are genuinely separate.
+    colour_rng = pal.colour_rng()
+    hue_field = field(colour_rng, terms=2)
     density = field(rng, terms=2)
     light = rng.uniform(0, math.tau)
 
@@ -58,12 +61,12 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     # come out near the maximum and a few large ones swallow the frame.
     bias = rng.uniform(1.6, 3.2)
     threshold = rng.uniform(0.42, 0.66)
-    stroke = rng.random() < 0.45
+    stroke = colour_rng.random() < 0.45
     # Large, well-separated shapes can carry real hue differences -- it was
     # small adjacent cells that turned a multi-hue scheme into confetti.
-    spread = rng.choice((0.05, 0.15, 0.45, 0.8))
+    spread = colour_rng.choice((0.05, 0.15, 0.45, 0.8))
     # Enough to push the far shapes back, not enough to erase them.
-    haze = rng.uniform(0.25, 0.55) * depth
+    haze = colour_rng.uniform(0.25, 0.55) * depth
 
     shapes = []
     for _ in range(count):

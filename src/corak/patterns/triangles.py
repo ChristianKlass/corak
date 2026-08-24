@@ -18,7 +18,7 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     rows = max(3, round(h / cell))
     cw, ch = w / cols, h / rows
     # Hue drifts across the image; lightness varies cell to cell. See hexagons.
-    hue_field = field(rng, terms=2)
+    hue_field = field(pal.colour_rng(), terms=2)
     light_field = field(rng)
 
     # Jitter keeps the grid from reading as graph paper, but a shared corner

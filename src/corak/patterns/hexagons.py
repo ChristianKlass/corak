@@ -30,7 +30,7 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     # whole image while lightness varies shape to shape: driving both from one
     # field makes a small spatial step cross a hue boundary, and neighbouring
     # shapes jump from orange to blue.
-    hue_field = field(rng, terms=2)
+    hue_field = field(pal.colour_rng(), terms=2)
     light_field = field(rng)
     depth = frame.depth
 

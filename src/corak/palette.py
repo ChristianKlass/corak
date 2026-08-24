@@ -254,7 +254,9 @@ class Palette:
     def for_theme(cls, seed: int, theme, dark: bool | None = None) -> "Palette":
         """A palette obeying a theme's colour constraints."""
         if getattr(theme, "colors", ()):
-            return cls.from_hex(theme.colors, dark=theme.dark if dark is None else dark)
+            return cls.from_hex(
+                theme.colors, dark=theme.dark if dark is None else dark, seed=seed
+            )
         return cls(
             seed,
             dark=theme.dark if dark is None else dark,
@@ -265,8 +267,16 @@ class Palette:
         )
 
     @classmethod
-    def from_hex(cls, codes: Iterable[str], dark: bool | None = None) -> "Palette":
-        """Build a palette from explicit hex codes, ordered dark to light."""
+    def from_hex(
+        cls, codes: Iterable[str], dark: bool | None = None, seed: int | None = None
+    ) -> "Palette":
+        """Build a palette from explicit hex codes, ordered dark to light.
+
+        The seed does not invent colours -- the point of giving a palette is
+        that it is the one used -- but it does choose how much of it a single
+        wallpaper draws on. Without that, rerolling the colours of a fixed
+        palette produces an identical image and the control appears broken.
+        """
         colors = []
         for code in codes:
             color = QColor(code if code.startswith("#") else f"#{code}")
@@ -293,11 +303,32 @@ class Palette:
             0.02,
             palette.base_hue,
         )
-        palette._t0, palette._t1 = 0.0, 1.0
+        palette._reverse = False
+        if seed is None:
+            palette._t0, palette._t1 = 0.0, 1.0
+        else:
+            rng = random.Random(seed)
+            width = rng.uniform(0.35, 1.0)
+            palette._t0 = rng.uniform(0.0, 1.0 - width)
+            palette._t1 = palette._t0 + width
+            # Running the ramp the other way puts the pale colours where the
+            # dark ones were. It is the largest change available without
+            # inventing a colour the palette does not contain.
+            palette._reverse = rng.random() < 0.4
+        palette.seed = -1 if seed is None else seed
         palette._generated = False
         palette._offsets = (0.0,)
         palette._lightness = (0.0, 1.0)
         return palette
+
+    def colour_rng(self) -> random.Random:
+        """A generator tied to the palette rather than to the geometry.
+
+        Which shape gets which colour is a colour decision, so it has to follow
+        the palette seed. Taken from the pattern's generator instead, rerolling
+        the colours leaves every shape holding the colour it already had.
+        """
+        return random.Random((self.seed if self.seed >= 0 else 0) ^ 0x9E3779B9)
 
     def hue_at(self, t: float) -> float:
         """The scheme's hue a fraction of the way along it."""
@@ -334,6 +365,8 @@ class Palette:
     def ramp(self, t: float, full: bool = False) -> QColor:
         """Sample the ramp. t is 0..1; `full` ignores the cohesion slice."""
         t = _clamp(t)
+        if getattr(self, "_reverse", False):
+            t = 1.0 - t
         if not full:
             t = self._t0 + (self._t1 - self._t0) * t
         if len(self.colors) == 1:
