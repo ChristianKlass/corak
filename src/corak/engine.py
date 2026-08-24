@@ -8,10 +8,11 @@ headless CLI running under the offscreen platform plugin.
 from __future__ import annotations
 
 import random
-from typing import Iterable, Sequence
+from typing import Iterable, Mapping, Sequence
 
 from PySide6.QtGui import QImage, QPainter
 
+from . import effects as fx
 from .design import Design
 from .palette import Palette
 from .patterns import REGISTRY, names
@@ -54,13 +55,22 @@ class Engine:
             palette_seed=rng.randrange(SEED_MAX) if palette_seed is None else palette_seed,
         )
 
-    def render(self, design: Design, width: int, height: int) -> QImage:
+    def render(
+        self,
+        design: Design,
+        width: int,
+        height: int,
+        effects: Mapping[str, float] | None = None,
+    ) -> QImage:
         try:
             draw = REGISTRY[design.pattern]
         except KeyError as exc:
             raise UnknownPattern(design.pattern) from exc
 
-        palette = Palette(design.palette_seed)
+        effects = dict(effects or {})
+        # The quiet mode only works against a dark ground; letting it land on a
+        # near-white palette produces a washed grey rather than a calm one.
+        palette = Palette(design.palette_seed, dark=True if effects.get("calm") else None)
         image = QImage(width, height, QImage.Format.Format_RGB32)
         image.fill(palette.background)
 
@@ -70,4 +80,9 @@ class Engine:
             draw(painter, width, height, random.Random(design.pattern_seed), palette)
         finally:
             painter.end()
+
+        if effects:
+            # Seeded from the design so grain is part of the reproducible image
+            # rather than something that changes on every redraw.
+            fx.apply_all(image, effects, random.Random(design.pattern_seed ^ 0x5F5E1))
         return image

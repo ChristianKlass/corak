@@ -18,12 +18,24 @@ from .preview import PreviewWidget
 PREVIEW_LONG_EDGE = 1600
 
 
+EFFECT_KEYS = {
+    Qt.Key.Key_C: "calm",
+    Qt.Key.Key_D: "darken",
+    Qt.Key.Key_V: "vignette",
+    Qt.Key.Key_G: "grain",
+}
+
+
 class MainWindow(QMainWindow):
     def __init__(self, session: Session, target: tuple[int, int]) -> None:
         super().__init__()
         self.session = session
         self.target = target
         self.setWindowTitle("corak")
+
+        # Toggled from the keyboard so the effects can be judged against the
+        # same design; step 4 moves these into saved settings.
+        self.effects: dict[str, float] = {}
 
         self.preview = PreviewWidget(self)
         self.setCentralWidget(self.preview)
@@ -43,13 +55,22 @@ class MainWindow(QMainWindow):
             return
         w, h = self._preview_size()
         started = time.perf_counter()
-        image = self.session.engine.render(design, w, h)
+        image = self.session.engine.render(design, w, h, self.effects)
         elapsed = (time.perf_counter() - started) * 1000.0
         self.preview.set_image(image)
+        active = ", ".join(f"{k} {v:g}" for k, v in sorted(self.effects.items()))
         self.statusBar().showMessage(
             f"{design}   target {self.target[0]}x{self.target[1]}"
             f"   preview {w}x{h}   {elapsed:.0f} ms"
+            + (f"   [{active}]" if active else "")
         )
+
+    def _toggle(self, name: str) -> None:
+        if name in self.effects:
+            del self.effects[name]
+        else:
+            self.effects[name] = 0.7 if name == "calm" else 0.6
+        self._show(self.session.current)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802 (Qt naming)
         key = event.key()
@@ -61,6 +82,8 @@ class MainWindow(QMainWindow):
             self._show(self.session.repattern())
         elif key == Qt.Key.Key_Down:
             self._show(self.session.previous())
+        elif key in EFFECT_KEYS:
+            self._toggle(EFFECT_KEYS[key])
         elif key in (Qt.Key.Key_Escape, Qt.Key.Key_Q):
             self.close()
         else:
