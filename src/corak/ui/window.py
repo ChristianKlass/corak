@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QMainWindow,
     QPushButton,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -54,11 +55,17 @@ EFFECT_KEYS = {
 # Left is back. It breaks the symmetry of one axis per horizontal key, but
 # back-is-left is a far stronger habit than any symmetry an interface can
 # invent, and reaching for it and getting new colours is a worse surprise.
+#
+# Ordered so the pair that mirror each other sit together and the odd one out
+# is last. The verbs are dim and the nouns are not: what changes between the
+# two rows is the only thing worth reading twice.
 ARROWS = (
-    ("↑", "new pattern + new colours"),
-    ("←", "back to the previous design"),
-    ("→", "new pattern"),
-    ("↓", "new colours"),
+    ("↓", (("keep", False), ("pattern", True), ("·", False),
+           ("reroll", False), ("colours", True))),
+    ("→", (("keep", False), ("colours", True), ("·", False),
+           ("reroll", False), ("pattern", True))),
+    ("↑", (("reroll", False), ("both", True))),
+    ("←", (("undo — previous design", False),)),
 )
 
 
@@ -107,7 +114,9 @@ class MainWindow(QMainWindow):
         central = QWidget(self)
         central.setLayout(layout)
         self.setCentralWidget(central)
-        self.resize(1180, 700)
+        # Its own minimum, not a number picked in advance: opening narrower than
+        # the bar needs clips the hints rather than shrinking anything.
+        self.resize(max(1180, self.minimumSizeHint().width()), 700)
 
         self._show(session.current)
 
@@ -164,19 +173,43 @@ class MainWindow(QMainWindow):
         return row
 
     def _build_arrows(self) -> QWidget:
-        """The key cross, laid out the way the keys are."""
+        """The arrow keys, one per line."""
         holder = QWidget(self)
-        grid = QGridLayout(holder)
-        grid.setContentsMargins(0, 0, 0, 0)
-        grid.setHorizontalSpacing(8)
-        grid.setVerticalSpacing(3)
+        holder.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
-        for i, (glyph, caption) in enumerate(ARROWS):
-            grid.addWidget(KeyCap(glyph, parent=self), i, 0)
-            label = QLabel(caption, self)
+        column = QVBoxLayout(holder)
+        # Room on the right: the longest line otherwise runs to the edge of the
+        # block and sits against the next column with nothing between them.
+        column.setContentsMargins(0, 0, 24, 0)
+        column.setSpacing(5)
+
+        heading = QLabel("arrow keys", self)
+        heading.setObjectName("section")
+        column.addWidget(heading)
+
+        grid = QGridLayout()
+        grid.setContentsMargins(0, 0, 0, 0)
+        grid.setHorizontalSpacing(9)
+        grid.setVerticalSpacing(4)
+        for row, (glyph, parts) in enumerate(ARROWS):
+            key = KeyCap(glyph, parent=self)
+            key.setFixedWidth(26)
+            grid.addWidget(key, row, 0)
+
+            label = QLabel(self._phrase(parts), self)
             label.setObjectName("hint")
-            grid.addWidget(label, i, 1, Qt.AlignmentFlag.AlignVCenter)
+            label.setTextFormat(Qt.TextFormat.RichText)
+            grid.addWidget(label, row, 1, Qt.AlignmentFlag.AlignVCenter)
+        column.addLayout(grid)
         return holder
+
+    def _phrase(self, parts: tuple[tuple[str, bool], ...]) -> str:
+        """Dim the verbs, leave the nouns alone."""
+        pieces = []
+        for text, emphasised in parts:
+            colour = self.scheme.text if emphasised else self.scheme.faint
+            pieces.append(f'<span style="color:{colour}">{text}</span>')
+        return " ".join(pieces)
 
     def _build_actions(self) -> QWidget:
         holder = QWidget(self)
@@ -198,8 +231,9 @@ class MainWindow(QMainWindow):
             buttons.addWidget(button)
         column.addLayout(buttons)
 
+        # Enter is not listed: the primary button directly above says what it
+        # does, and repeating it cost the width that clipped the row below.
         for keys, caption in (
-            (("Enter",), "set as wallpaper"),
             (("T", "⇧T"), "next / previous theme"),
             (("C", "D", "V", "G"), "calm · darken · vignette · grain"),
         ):

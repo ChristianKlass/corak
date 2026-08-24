@@ -167,9 +167,11 @@ The wallpaper takes the whole upper surface and the chrome sits under it as one
 quiet bar, because the generated image is the point and the interface around it
 is a frame for someone else's picture.
 
-Two things that used to be invisible are now stated. The arrow keys are drawn as
-a cross laid out the way the keys physically are, since nothing else hinted that
-the interaction existed. And the design's identity — theme, pattern, and the two
+Two things that used to be invisible are now stated. The arrow keys are listed
+one per line, since nothing else hinted that the interaction existed. The two
+that mirror each other sit together and the odd one out is last; the verbs are
+dim and the nouns are not, because what changes between those two lines is the
+only part worth reading twice. And the design's identity — theme, pattern, and the two
 seeds — is four labelled fields rather than one run of text, with a button to
 copy it, because it can be typed back into `corak --design` to recover a
 wallpaper.

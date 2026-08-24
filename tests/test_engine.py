@@ -324,9 +324,12 @@ class TestThemes(unittest.TestCase):
         self.assertEqual(after.pattern_seed, held.pattern_seed, "down should keep the geometry")
         self.assertNotEqual(after.palette_seed, held.palette_seed, "down should recolour")
 
-        captions = dict(ARROWS)
-        self.assertIn("back", captions["←"])
-        self.assertIn("colours", captions["↓"])
+        phrases = {
+            glyph: " ".join(text for text, _emphasis in parts) for glyph, parts in ARROWS
+        }
+        self.assertIn("previous", phrases["←"])
+        self.assertIn("colours", phrases["↓"])
+        self.assertIn("pattern", phrases["→"])
 
     def test_arrow_actions_keep_the_theme(self) -> None:
         session = Session(self.engine, random.Random(2), theme=self.COOL)
