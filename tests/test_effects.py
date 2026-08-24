@@ -203,6 +203,21 @@ class TestShading(unittest.TestCase):
         self.assertAlmostEqual(to_oklch(darker)[0], 0.4, places=2)
         self.assertAlmostEqual(to_oklch(lighter)[2], to_oklch(base)[2], places=2)
 
+    def test_capsule_is_centred_on_the_point_given(self) -> None:
+        from PySide6.QtCore import QPointF
+
+        bounds = shading.capsule(100.0, 50.0, 80.0, 40.0, 10.0, 0.0).boundingRect()
+        self.assertAlmostEqual(bounds.center().x(), 100.0, places=3)
+        self.assertAlmostEqual(bounds.center().y(), 50.0, places=3)
+
+    def test_capsule_rotates_about_its_own_centre(self) -> None:
+        import math
+
+        upright = shading.capsule(100.0, 50.0, 80.0, 40.0, 10.0, 0.0).boundingRect()
+        turned = shading.capsule(100.0, 50.0, 80.0, 40.0, 10.0, math.pi / 2).boundingRect()
+        self.assertAlmostEqual(turned.center().x(), upright.center().x(), places=3)
+        self.assertAlmostEqual(turned.width(), upright.height(), places=3)
+
     def test_zero_depth_leaves_the_background_flat(self) -> None:
         from PySide6.QtGui import QImage, QPainter
 

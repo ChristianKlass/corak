@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 import random
 import unittest
+from unittest import mock
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -203,6 +204,16 @@ class TestThemes(unittest.TestCase):
         light = Palette(design.palette_seed, dark=False)
         forced = Palette(design.palette_seed, dark=True)
         self.assertLess(to_oklch(forced.background)[0], to_oklch(light.background)[0])
+
+    def test_scatter_gives_up_rather_than_looping_when_nowhere_is_dense(self) -> None:
+        # Placement rejects candidates until the density field accepts one; a
+        # field that never does must not spin.
+        from corak.patterns import scatter as scatter_module
+
+        design = self.engine.new_design(random.Random(2), pattern="scatter")
+        with mock.patch.object(scatter_module, "field", return_value=lambda u, v: 0.0):
+            image = self.engine.render(design, 200, 120)
+        self.assertEqual((image.width(), image.height()), (200, 120))
 
     def test_theme_narrows_the_pattern_choice(self) -> None:
         slate = themes.get("slate")

@@ -14,7 +14,15 @@ from __future__ import annotations
 
 import math
 from PySide6.QtCore import QPointF
-from PySide6.QtGui import QBrush, QColor, QLinearGradient, QPainter, QPainterPath, QRadialGradient
+from PySide6.QtGui import (
+    QBrush,
+    QColor,
+    QLinearGradient,
+    QPainter,
+    QPainterPath,
+    QRadialGradient,
+    QTransform,
+)
 
 from .frame import Frame
 from .palette import oklch, to_oklch
@@ -66,6 +74,18 @@ def shape_brush(
     gradient.setColorAt(0.0, shift(color, spread, 0.95))
     gradient.setColorAt(1.0, shift(color, -spread, 1.05))
     return QBrush(gradient)
+
+
+def capsule(
+    cx: float, cy: float, width: float, height: float, radius: float, angle: float
+) -> QPainterPath:
+    """A rounded rectangle, rotated about its own centre."""
+    path = QPainterPath()
+    path.addRoundedRect(-width / 2.0, -height / 2.0, width, height, radius, radius)
+    transform = QTransform()
+    transform.translate(cx, cy)
+    transform.rotateRadians(angle)
+    return transform.map(path)
 
 
 def drop_shadow(

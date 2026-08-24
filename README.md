@@ -143,6 +143,20 @@ through the midpoint. Where a requested colour falls outside sRGB its chroma is
 reduced until it fits, rather than each channel being clipped independently —
 clipping shifts the hue, which is the thing a perceptual space is there to avoid.
 
+## Composition
+
+A lattice fills every pixel and reads as texture, whatever colours it uses. What
+makes a wallpaper look composed is the opposite: a handful of large shapes, more
+small ones, clustered somewhere and absent elsewhere, with the background left
+visible between them. The `scatter` pattern is built that way — sizes drawn from
+a biased distribution so a few dominate, positions rejected against a density
+field so they gather and leave the rest of the frame open, and shapes drawn
+largest first so the small ones sit in front and the shadows stack correctly.
+
+Large, well-separated shapes can carry real hue differences. It was small
+adjacent cells that turned a multi-hue scheme into confetti, so `scatter` allows
+a much wider hue spread than the tiling patterns do.
+
 ## Depth
 
 Flat fills are what make a generated wallpaper look generated. Three things
