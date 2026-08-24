@@ -127,7 +127,7 @@ class SettingsDialog(QDialog):
 
     def __init__(self, settings: Settings, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("corak — Settings")
+        self.setWindowTitle("corak - Settings")
         self.setMinimumWidth(520)
         self.resize(520, 780)
         self.setStyleSheet(stylesheet(scheme()))

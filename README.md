@@ -1,7 +1,7 @@
 # corak
 
 Procedurally generated geometric wallpapers for Linux. Every image is drawn from
-a seed — nothing is downloaded, and there is no image library on disk.
+a seed. Nothing is downloaded, and there is no image library on disk.
 
 `corak` is Malay for *pattern*.
 
@@ -54,9 +54,9 @@ corak --add-theme FILE      # check a theme document and install it
 
 ## Themes
 
-A theme is a set of constraints, not a wallpaper — which patterns, which part of
+A theme is a set of constraints, not a wallpaper: which patterns, which part of
 the colour wheel, how saturated, how large the shapes, which effects. Every image
-it produces is different; they all look related.
+it produces is different, and they all look related.
 
 | Theme | Palette | |
 |--- |--- |--- |
@@ -88,7 +88,7 @@ into `~/.config/corak/themes/`, or use `--add-theme` to have it checked first.
 ## Rotation
 
 A systemd user timer runs `corak --next`. Tick *Change the wallpaper
-automatically* in the settings window and it writes and enables the units — no
+automatically* in the settings window and it writes and enables the units. No
 resident process, and it survives a logout.
 
 ```bash
@@ -103,8 +103,8 @@ systemctl --user status corak.timer
 | GNOME | `gsettings`, both the light and dark keys | no |
 | Xfce | one `xfconf` property per monitor | yes |
 
-Only Plasma is tested — it is what I run. The other two are written against
-their documented interfaces and have never touched a real session.
+Only Plasma is tested, since it is what I run. The other two are written
+against their documented interfaces and have never touched a real session.
 
 ## Notes
 
@@ -113,12 +113,12 @@ Things that were not obvious, mostly discovered the hard way.
 * **Features are sized in millimetres**, not as a fraction of the frame. Sizing
   by width put the same design at 67, 75 and 21 pixels across on my three
   monitors. Physical size comes from KScreen, because Qt only learns an integer
-  buffer scale under Wayland — a 1.5× output reports as 2× and a 3840×1100 panel
+  buffer scale under Wayland: a 1.5× output reports as 2×, so a 3840×1100 panel
   looks like 5120×1466.
 
 * **Colour lives in OKLab.** HSL lightness is not perceptual, so equal steps do
   not look equal. Blending takes the shorter way round the hue circle for
-  generated schemes, and a straight line for a palette somebody chose — blue to
+  generated schemes, and a straight line for a palette somebody chose. Blue to
   rust the polar way passes through green, inventing a colour that is not in the
   set.
 
@@ -127,7 +127,7 @@ Things that were not obvious, mostly discovered the hard way.
   shapes jump from orange to blue.
 
 * **Fields are normalised.** A low-frequency field completes less than one cycle
-  over the frame and sits near-constant at whatever its phases give — usually
+  over the frame and sits near-constant at whatever its phases give, usually
   pinned to one end, so a whole palette renders as its darkest colour.
 
 * **Grain writes about 20× larger files.** Noise does not compress: 0.3 MB
@@ -150,14 +150,6 @@ licensable part, but the credit is theirs:
 | Catppuccin | Catppuccin | MIT |
 | Tokyo Night | enkia | MIT |
 
-## Tests
-
-```bash
-QT_QPA_PLATFORM=offscreen .venv/bin/python -m unittest discover -s tests
-.venv/bin/python -m pip install -e ".[dev]"
-.venv/bin/ruff check src tests
-```
-
 ## Licence
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

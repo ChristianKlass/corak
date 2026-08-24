@@ -274,8 +274,8 @@ class MainWindow(QMainWindow):
         self.preview.set_image(image)
 
         theme = self.settings.active_theme()
-        self.setWindowTitle(f"corak — {theme.name}")
-        self.field_theme.set_value(design.theme or "—")
+        self.setWindowTitle(f"corak - {theme.name}")
+        self.field_theme.set_value(design.theme or "-")
         self.field_pattern.set_value(design.pattern)
         self.field_pattern_seed.set_value(f"{design.pattern_seed:06x}")
         self.field_palette_seed.set_value(f"{design.palette_seed:06x}")
