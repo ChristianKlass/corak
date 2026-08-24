@@ -21,8 +21,9 @@ from dataclasses import replace
 
 from ..config import Settings, save
 from ..design import Design
+from ..frame import NOMINAL_PX_PER_MM
 from ..rotation import describe, rotate
-from ..screens import primary_size
+from ..screens import detect, primary_size
 from ..session import Session
 from ..store import Store
 from ..themes import all_themes
@@ -34,6 +35,18 @@ from .settings import SettingsDialog
 # patterns that exist today, but the preview keeps the target aspect and caps
 # the pixel count so a heavier pattern cannot stall the window.
 PREVIEW_LONG_EDGE = 1600
+
+def _primary_density() -> float:
+    """Pixel density of the screen the preview stands in for."""
+    try:
+        screens = detect()
+    except RuntimeError:
+        return NOMINAL_PX_PER_MM
+    for screen in screens:
+        if screen.primary:
+            return screen.px_per_mm
+    return screens[0].px_per_mm if screens else NOMINAL_PX_PER_MM
+
 
 EFFECT_KEYS = {
     Qt.Key.Key_C: "calm",
@@ -58,6 +71,7 @@ class MainWindow(QMainWindow):
         self.settings = settings
         self.store = store
         self.target = target or primary_size()
+        self.density = _primary_density()
         self.effects = dict(settings.active_theme().effects)
         self._warning = ""
 
@@ -98,13 +112,24 @@ class MainWindow(QMainWindow):
         scale = min(1.0, PREVIEW_LONG_EDGE / max(w, h))
         return max(1, round(w * scale)), max(1, round(h * scale))
 
+    def _preview_density(self, width: int) -> float:
+        """Pixel density for the preview, matched to the target screen.
+
+        Features are sized in millimetres, so a smaller image is a physically
+        smaller screen and shows fewer, larger shapes. Previewing at the
+        target's own density showed something the wallpaper would never look
+        like.
+        """
+        target_width = max(1, self.target[0])
+        return self.density * width / target_width
+
     def _show(self, design: Design | None) -> None:
         if design is None:
             self.statusBar().showMessage("nothing further back in history", 2000)
             return
         w, h = self._preview_size()
         started = time.perf_counter()
-        image = self.session.engine.render(design, w, h, self.effects)
+        image = self.session.engine.render(design, w, h, self.effects, self._preview_density(w))
         elapsed = (time.perf_counter() - started) * 1000.0
         self.preview.set_image(image)
 

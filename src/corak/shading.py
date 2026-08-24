@@ -96,6 +96,7 @@ def cast_shadows(
     light: float,
     strength: float = 1.0,
     divisor: int = 3,
+    color: QColor | None = None,
 ) -> None:
     """Soft shadows for a group of shapes, in one pass.
 
@@ -119,7 +120,11 @@ def cast_shadows(
         into.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         into.scale(1.0 / divisor, 1.0 / divisor)
         into.setPen(Qt.PenStyle.NoPen)
-        into.setBrush(QColor(0, 0, 0, min(255, int(190 * strength))))
+        # Not pure black. A shadow is the ground with less light on it, so on a
+        # pale theme black is a blot rather than a shadow.
+        tone = QColor(color) if color is not None else QColor(0, 0, 0)
+        tone.setAlpha(min(255, int(190 * strength)))
+        into.setBrush(tone)
         for path, distance in casters:
             dx, dy = -math.cos(light) * distance, -math.sin(light) * distance
             into.translate(dx, dy)

@@ -191,6 +191,14 @@ Large, well-separated shapes can carry real hue differences. It was small
 adjacent cells that turned a multi-hue scheme into confetti, so `scatter` allows
 a much wider hue spread than the tiling patterns do.
 
+## Previewing
+
+The window renders smaller than the screen, so it scales the pixel density down
+to match. Features are sized in millimetres, which makes a smaller image a
+physically smaller screen: previewed at the target's own density it showed
+shapes at roughly twice the size the wallpaper would have, which is not a
+preview of anything.
+
 ## Depth
 
 Flat fills are what make a generated wallpaper look generated. Three things

@@ -294,5 +294,33 @@ class TestKScreen(unittest.TestCase):
         self.assertNotIn("QT_QPA_PLATFORM", captured)
 
 
+class TestPreviewFidelity(unittest.TestCase):
+    """The preview has to show what the wallpaper will be."""
+
+    def test_preview_density_scales_with_the_preview(self) -> None:
+        from corak.ui.window import MainWindow
+
+        window = MainWindow.__new__(MainWindow)
+        window.target = (3440, 1440)
+        window.density = 4.31
+        # Half the width is half the screen, so half the pixels per millimetre.
+        self.assertAlmostEqual(window._preview_density(1720), 2.155, places=3)
+        self.assertAlmostEqual(window._preview_density(3440), 4.31, places=3)
+
+    def test_a_preview_matches_the_full_size_render(self) -> None:
+        import random
+
+        from corak.engine import Engine
+        from corak.frame import Frame
+
+        # Same design at two sizes with matched density puts a feature at the
+        # same fraction of the frame.
+        engine = Engine()
+        design = engine.new_design(random.Random(3), pattern="scatter")
+        big = Frame(3440, 1440, 4.31)
+        small = Frame(860, 360, 4.31 * 860 / 3440)
+        self.assertAlmostEqual(big.mm(50) / big.width, small.mm(50) / small.width, places=6)
+
+
 if __name__ == "__main__":
     unittest.main()

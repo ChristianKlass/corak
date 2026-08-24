@@ -127,6 +127,7 @@ def _paint(painter, band, frame, pal, rng, colour_rng, light, spread, haze, hue_
         [(path, size * SHADOW_THROW * (0.35 + z)) for z, _x, _y, size, path in placed],
         light,
         depth,
+        color=shift(pal.background, -0.22),
     )
 
     for z, x, y, size, path in placed:
