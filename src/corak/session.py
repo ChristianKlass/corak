@@ -29,7 +29,8 @@ class Session:
     @property
     def current(self) -> Design:
         design = self.history.current
-        assert design is not None  # the constructor always seeds one
+        if design is None:  # the constructor always seeds one
+            raise RuntimeError("the session has no design")
         return design
 
     def regenerate(self) -> Design:
