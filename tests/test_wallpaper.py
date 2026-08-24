@@ -15,6 +15,11 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+# Tests must not see the running user's installed themes or settings: a theme
+# dropped into the real config directory would otherwise change what they mean.
+_isolated = tempfile.mkdtemp(prefix="corak-tests-")
+os.environ["XDG_CONFIG_HOME"] = os.path.join(_isolated, "config")
+os.environ["XDG_DATA_HOME"] = os.path.join(_isolated, "data")
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtGui import QGuiApplication  # noqa: E402

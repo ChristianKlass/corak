@@ -74,13 +74,17 @@ def _show_history(limit: int) -> int:
 
 
 def _list_themes() -> int:
-    from .themes import BY_ID, all_themes
+    from .themes import BUILT_IN, all_themes
 
+    # Compared by identity, not by id: an installed theme may share a name with
+    # a packaged one, and it is the installed one on show. Theme holds a dict of
+    # effects, so it is not hashable and cannot go in a set.
+    packaged = [id(theme) for theme in BUILT_IN]
     for theme in all_themes():
         if theme.derived_from:
             origin = f"from {theme.derived_from}"
         else:
-            origin = "built-in" if theme.id in BY_ID else "installed"
+            origin = "built-in" if id(theme) in packaged else "installed"
         print(f"{theme.id:<12} {theme.name:<16} {origin:<14} {theme.description}")
     return 0
 

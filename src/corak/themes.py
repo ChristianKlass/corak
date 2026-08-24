@@ -176,13 +176,18 @@ def get(identifier: str, extra: Sequence[Theme] = ()) -> Theme:
 
 
 def all_themes(extra: Sequence[Theme] = ()) -> list[Theme]:
-    themes = list(BUILT_IN)
-    seen = {t.id for t in themes}
+    """Every theme available, installed ones shadowing packaged namesakes.
+
+    An installed theme wins: someone who writes a file called slate.json means
+    to replace slate, and `get` resolves it that way, so the listing has to
+    agree or the two disagree about what a name refers to.
+    """
+    by_id = {theme.id: theme for theme in BUILT_IN}
     for theme in user_themes() + list(extra):
-        if theme.id not in seen:
-            themes.append(theme)
-            seen.add(theme.id)
-    return themes
+        by_id[theme.id] = theme
+    order = [t.id for t in BUILT_IN]
+    order += [i for i in by_id if i not in order]
+    return [by_id[i] for i in order]
 
 
 def problems(data: dict) -> list[str]:
