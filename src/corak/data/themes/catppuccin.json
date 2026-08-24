@@ -1,0 +1,20 @@
+{
+  "id": "catppuccin",
+  "name": "Catppuccin",
+  "description": "Soft pastels with a lavender bias.",
+  "colors": [
+    "#1E1E2E",
+    "#313244",
+    "#585B70",
+    "#CBA6F7",
+    "#89B4FA",
+    "#F38BA8"
+  ],
+  "dark": true,
+  "effects": {
+    "calm": 0.35
+  },
+  "scale": 1.2,
+  "source": "Catppuccin",
+  "license": "MIT"
+}

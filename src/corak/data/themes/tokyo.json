@@ -1,0 +1,20 @@
+{
+  "id": "tokyo",
+  "name": "Tokyo Night",
+  "description": "Cool neon blues and violets over near-black.",
+  "colors": [
+    "#1A1B26",
+    "#24283B",
+    "#414868",
+    "#7AA2F7",
+    "#BB9AF7",
+    "#9ECE6A"
+  ],
+  "dark": true,
+  "effects": {
+    "calm": 0.3
+  },
+  "scale": 1.1,
+  "source": "Tokyo Night by enkia",
+  "license": "MIT"
+}

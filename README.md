@@ -95,78 +95,14 @@ image a theme produces is different; they all look related.
 
 | Theme | |
 | --- | --- |
-
-Themes are data, not code: the built-in ones are JSON shipped beside the module,
-and anything dropped into `$XDG_CONFIG_HOME/corak/themes` is picked up too. A
-theme can state hue, chroma and lightness ranges and have its palette generated,
-or give explicit colours and have them used as they are. `docs/theme-prompt.md`
-is a prompt for getting a set out of a chat model; `--add-theme` reports
-everything wrong with a document rather than one fault at a time, since a
-generated file is worth checking in full.
-
-How far a shape may sit from the palette colour it was given is also the
-pattern's to set. A faceted pattern needs a lot of it: what makes a field of
-triangles read as faceted rather than as a smear is each one being a visibly
-different lightness from the ones beside it, which a smooth field alone will
-never give.
-
-How much the second input moves the position along a palette is the pattern's to
-say. Where it varies slowly, as depth does, it can carry weight; where it varies
-cell to cell it must not, or a palette of distinct hues turns neighbouring cells
-into noise.
-
-A theme's colours describe a region of colour space rather than five exact
-points. Rerolling the colours rotates the hue a little, shifts the lightness a
-little, and aims the chroma at an absolute target — usually near what the theme
-asked for, sometimes well past it. Without that last part a muted theme has no
-vivid variant in it at all, and the only escape from a grey wallpaper is to
-change theme. Aiming at an absolute chroma rather than scaling by a factor
-matters because a palette written at 0.04 cannot be multiplied into a colourful
-one by any factor that is not absurd for a palette written at 0.15.
-
-The tonal effects vary with the palette too, weighted downward: turning the
-quiet mode down reveals the colours underneath, which is the point of rerolling
-them, while turning it up only ever hides more.
-
-A given palette is interpolated in a straight line through OKLab rather than
-round the hue circle. The polar route keeps chroma up between distant hues,
-which is right for a generated scheme, but for colours somebody chose it invents
-ones they did not pick — blue to rust by that route passes through green.
-
-Themes are chosen rather than built. Starting from nothing means answering a
-dozen questions before seeing anything, so the settings window adjusts a theme
-that already works and saves the result as a variant — the original stays put,
-and *Reset to original* puts the variant back. Matching the original exactly
-drops the variant rather than storing an identical copy.
-
-A theme can also pin the perceptual lightness its ramp spans, which is what
-keeps a light theme usable. Between roughly 0.12 and 0.45 of a turn around the
-hue wheel, anything below a lightness of about 0.75 reads as khaki — but
-escaping upward gives a near-white wallpaper, which on a large screen is a lamp.
-A light theme instead sits at middling lightness and steers around that part of
-the wheel. Its background follows its own ramp rather than a fixed near-white,
-so it cannot glare regardless of where the ramp sits.
-
-A theme's hue range is the whole colour budget, not just where the base hue may
-sit. A split-complementary scheme reaches 0.58 of a turn from its base, which
-would carry a blue theme into brown, so a constrained theme has its scheme
-offsets compressed to fit and its base placed so all of them land inside.
-
-The theme is part of a `Design`, not a setting applied to one: the same seeds
-under a different theme are a different image, so a history row without it could
-not be reproduced.
-
-## Patterns
-
-| Pattern | |
-| --- | --- |
-| `hexagons` | Flat-top hexagonal tiling |
-| `triangles` | Split rectangles — the low-poly look |
-| `waves` | Stacked bands, each casting onto the one behind |
-| `scatter` | Loose shapes over open ground, in depth |
-| `bokeh` | Overlapping translucent discs thrown out of focus |
-| `constellation` | Points joined by lines, mostly empty |
-| `flowing` | A few large organic shapes with lit edges |
+| **Abyssal Flare** | Heavy oceanic depths interrupted by a bright coral flash. |
+| **Art Deco** | Mid-toned architectural revival with contrasting coral and navy. |
+| **Catppuccin** | Soft pastels with a lavender bias. |
+| **Crown Jewel** | Deep and saturated gemstone hues set in heavy shadow. |
+| **Nightfall** | Cinematic evening hues driven by slate, crimson, and emerald. |
+| **Nord** | Arctic blues and muted frost. |
+| **Tokyo Night** | Cool neon blues and violets over near-black. |
+| **Vintage Cel** | Slightly brighter animated aesthetic with brass and salmon. |
 
 ## Colour
 
@@ -327,16 +263,8 @@ the credit, and anyone redistributing this should know the terms:
 | Palette | From | Licence |
 | --- | --- | --- |
 | Nord | Arctic Ice Studio and Sven Greb | MIT |
-| Dracula | Zeno Rocha and contributors | MIT |
 | Catppuccin | Catppuccin | MIT |
-| Gruvbox | Pavel Pertsev | MIT/X11 |
-| Solarized | Ethan Schoonover | MIT |
 | Tokyo Night | enkia | MIT |
-| Voltage | after the classic Monokai scheme by Wimer Hazenberg | — |
-
-Voltage carries its own name rather than Monokai's. The 2006 palette is widely
-reproduced, but Monokai Pro is a commercial product today, and the name is not
-ours to take. The palette is what was wanted; the name was doing no work.
 
 Each theme carries `source` and `license` fields, shown by `corak --list-themes`.
 

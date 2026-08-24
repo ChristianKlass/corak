@@ -1,0 +1,17 @@
+{
+  "id": "deco",
+  "name": "Art Deco",
+  "description": "Mid-toned architectural revival with contrasting coral and navy.",
+  "colors": [
+    "#214D72",
+    "#CE5C5C",
+    "#E3A857",
+    "#3A7C6B",
+    "#774C82"
+  ],
+  "dark": false,
+  "effects": {
+    "vignette": 0.2
+  },
+  "scale": 1.2
+}

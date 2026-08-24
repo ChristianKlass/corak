@@ -1,0 +1,20 @@
+{
+  "id": "nord",
+  "name": "Nord",
+  "description": "Arctic blues and muted frost, from the editor scheme.",
+  "colors": [
+    "#2E3440",
+    "#3B4252",
+    "#4C566A",
+    "#5E81AC",
+    "#88C0D0",
+    "#B48EAD"
+  ],
+  "dark": true,
+  "effects": {
+    "calm": 0.2
+  },
+  "scale": 1.2,
+  "source": "Nord by Arctic Ice Studio and Sven Greb",
+  "license": "MIT"
+}

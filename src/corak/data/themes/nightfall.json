@@ -1,18 +1,18 @@
 {
   "id": "nightfall",
   "name": "Nightfall",
-  "description": "Deep evening shadows cut by warm artificial lights.",
+  "description": "Cinematic evening hues driven by slate, crimson, and emerald.",
   "colors": [
-    "#1A0B2E",
-    "#004D40",
-    "#D4A373",
-    "#780000",
-    "#0A192F"
+    "#1A2A3A",
+    "#A52A2A",
+    "#C2A85B",
+    "#2E6F5B",
+    "#553C6A"
   ],
   "dark": true,
   "effects": {
-    "vignette": 0.5,
-    "darken": 0.2
+    "darken": 0.3,
+    "calm": 0.2
   },
-  "scale": 1.2
+  "scale": 1.4
 }

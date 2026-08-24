@@ -1,0 +1,17 @@
+{
+  "id": "vintage",
+  "name": "Vintage Cel",
+  "description": "Slightly brighter animated aesthetic with brass and salmon.",
+  "colors": [
+    "#D96B62",
+    "#236B8E",
+    "#6D3A7A",
+    "#B5A53B",
+    "#A6214A"
+  ],
+  "dark": false,
+  "effects": {
+    "calm": 0.4
+  },
+  "scale": 1.5
+}
