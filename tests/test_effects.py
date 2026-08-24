@@ -250,6 +250,35 @@ class TestShading(unittest.TestCase):
         self.assertAlmostEqual(turned.center().x(), upright.center().x(), places=3)
         self.assertAlmostEqual(turned.width(), upright.height(), places=3)
 
+    def test_shadows_fall_away_from_the_light(self) -> None:
+        import math
+
+        from PySide6.QtGui import QImage, QPainter
+
+        frame = Frame(200, 200)
+        path = shading.capsule(100.0, 100.0, 60.0, 60.0, 10.0, 0.0)
+        image = QImage(200, 200, QImage.Format.Format_RGB32)
+        image.fill(0xFFFFFFFF)
+        painter = QPainter(image)
+        # Lit from the left, so the shadow lands to the right.
+        shading.cast_shadows(painter, frame, [(path, 40.0)], math.pi, 1.0)
+        painter.end()
+        left = image.pixelColor(40, 100).valueF()
+        right = image.pixelColor(160, 100).valueF()
+        self.assertLess(right, left)
+
+    def test_no_shadow_at_zero_strength(self) -> None:
+        from PySide6.QtGui import QImage, QPainter
+
+        frame = Frame(120, 120)
+        path = shading.capsule(60.0, 60.0, 40.0, 40.0, 8.0, 0.0)
+        image = QImage(120, 120, QImage.Format.Format_RGB32)
+        image.fill(0xFFFFFFFF)
+        painter = QPainter(image)
+        shading.cast_shadows(painter, frame, [(path, 20.0)], 0.0, 0.0)
+        painter.end()
+        self.assertEqual(image.pixelColor(60, 60).name(), "#ffffff")
+
     def test_zero_depth_leaves_the_background_flat(self) -> None:
         from PySide6.QtGui import QImage, QPainter
 

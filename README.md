@@ -181,9 +181,13 @@ change that, and none of them is expensive — they are all QPainter brushes:
   bright and somewhere to be dark, which no amount of per-cell variation supplies
 - a **gradient across each shape**, lit from one direction shared by the whole
   image, since shapes lit from different angles read as a collage
-- a **soft shadow**, built from three offset translucent copies rather than a
-  blur: a real gaussian over a 4K frame costs seconds, and at this scale the
-  copies read the same
+- a **shadow**. Tiling patterns use three offset translucent copies, faint,
+  because there a shadow only ever lands in the seam between two touching tiles
+  and anything stronger closes into black webbing. Scattered shapes sit on open
+  ground and take a real one: the whole depth band is painted small into its own
+  layer and drawn back at full size, giving a penumbra rather than a hard edge,
+  with nearer shapes throwing further. Kept fairly tight — softened more, it
+  stops reading as a shadow under a shape and becomes a general dimming.
 
 All of it is kept subtle. A strong per-shape gradient stops reading as a lit
 surface and starts reading as an inflated bubble — rounded corners on top of one

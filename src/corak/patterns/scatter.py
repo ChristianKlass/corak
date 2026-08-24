@@ -22,12 +22,17 @@ from PySide6.QtGui import QImage, QPainter, QPen
 from ..frame import Frame
 from ..noise import field
 from ..palette import blend_direct
-from ..shading import capsule, drop_shadow, shape_brush, shift, underlay
+from ..shading import capsule, cast_shadows, shape_brush, shift, underlay
 from .base import pattern
 
 # Rejected candidates are cheap and keeping the loop bounded matters more than
 # hitting the target count exactly.
 MAX_ATTEMPTS = 60
+
+# How far a shape throws its shadow, as a fraction of its own size. Generous:
+# these sit on open ground, unlike the tiling patterns where a shadow only ever
+# lands in the seam between two touching tiles.
+SHADOW_THROW = 0.15
 
 # Far to near. The divisor is how much a band is shrunk before being drawn back
 # at full size, which is what puts it out of focus: a real gaussian at wallpaper
@@ -102,15 +107,26 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
 
 def _paint(painter, band, frame, pal, rng, light, spread, haze, hue_field, stroke, depth) -> None:
     w, h = frame.width, frame.height
+
+    # Geometry first, so the whole band's shadows can be cast in one pass onto
+    # the ground behind it rather than onto each other.
+    placed = []
     for z, x, y, size in band:
         aspect = rng.choice((1.0, 1.0, rng.uniform(1.4, 3.4)))
         radius = size * rng.uniform(0.35, 0.5)
         angle = rng.uniform(0, math.tau)
-        path = capsule(x, y, size * aspect, size, radius, angle)
+        placed.append((z, x, y, size, capsule(x, y, size * aspect, size, radius, angle)))
 
-        # Nearer shapes sit higher off the ground, so they cast further.
-        drop_shadow(painter, path, light, size * 0.10 * depth * (0.4 + z), depth * (0.4 + z))
+    # Nearer shapes sit higher off the ground, so they throw further.
+    cast_shadows(
+        painter,
+        frame,
+        [(path, size * SHADOW_THROW * (0.35 + z)) for z, _x, _y, size, path in placed],
+        light,
+        depth,
+    )
 
+    for z, x, y, size, path in placed:
         hue_t = hue_field(x / w * 1.3, y / h * 1.3) + rng.uniform(-spread, spread)
         color = pal.shade(hue_t, 0.30 + 0.55 * z + rng.uniform(-0.07, 0.07))
         # Aerial perspective: distance pulls a shape toward the background, so

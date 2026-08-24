@@ -13,9 +13,10 @@ work recovers from.
 from __future__ import annotations
 
 import math
-from PySide6.QtCore import QPointF
+from PySide6.QtCore import QPointF, QRect, Qt
 from PySide6.QtGui import (
     QBrush,
+    QImage,
     QColor,
     QLinearGradient,
     QPainter,
@@ -86,6 +87,49 @@ def capsule(
     transform.translate(cx, cy)
     transform.rotateRadians(angle)
     return transform.map(path)
+
+
+def cast_shadows(
+    painter: QPainter,
+    frame,
+    casters,
+    light: float,
+    strength: float = 1.0,
+    divisor: int = 3,
+) -> None:
+    """Soft shadows for a group of shapes, in one pass.
+
+    Painted small and drawn back at full size, which is a real penumbra rather
+    than the hard edge a few stacked copies give. Done for a whole group so the
+    shapes in it share one shadow plane and do not darken each other.
+
+    Kept fairly tight. Softening it further stops reading as a shadow under a
+    shape and starts reading as a general dimming of the whole image.
+    """
+    if strength <= 0.0 or not casters:
+        return
+    w, h = frame.width, frame.height
+    small = QImage(
+        max(1, w // divisor), max(1, h // divisor), QImage.Format.Format_ARGB32_Premultiplied
+    )
+    small.fill(Qt.GlobalColor.transparent)
+
+    into = QPainter(small)
+    try:
+        into.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        into.scale(1.0 / divisor, 1.0 / divisor)
+        into.setPen(Qt.PenStyle.NoPen)
+        into.setBrush(QColor(0, 0, 0, min(255, int(190 * strength))))
+        for path, distance in casters:
+            dx, dy = -math.cos(light) * distance, -math.sin(light) * distance
+            into.translate(dx, dy)
+            into.drawPath(path)
+            into.translate(-dx, -dy)
+    finally:
+        into.end()
+
+    painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+    painter.drawImage(QRect(0, 0, w, h), small)
 
 
 def drop_shadow(
