@@ -156,8 +156,10 @@ change that, and none of them is expensive — they are all QPainter brushes:
   blur: a real gaussian over a 4K frame costs seconds, and at this scale the
   copies read the same
 
-Shapes can also have their corners rounded. Themes carry a `depth` from 0 to 1,
-so a theme can still ask for flat fills.
+All of it is kept subtle. A strong per-shape gradient stops reading as a lit
+surface and starts reading as an inflated bubble — rounded corners on top of one
+make it a children's book. Themes carry a `depth` from 0 to 1, so a theme can
+still ask for flat fills.
 
 ## Scale
 

@@ -104,6 +104,9 @@ BUILT_IN: tuple[Theme, ...] = (
         name="Quiet",
         description="Dark and barely there. Made to sit behind windows.",
         schemes=("mono", "analogous"),
+        # Steers clear of the khaki quarter of the wheel, as Linen does: at low
+        # chroma it is not garish, but it is drab.
+        hue_range=(0.45, 1.12),
         chroma=(0.025, 0.07),
         dark=True,
         effects={"calm": 0.7},

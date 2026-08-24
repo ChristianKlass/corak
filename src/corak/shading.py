@@ -1,16 +1,18 @@
-"""Depth: gradients, shadows and rounded geometry.
+"""Depth: gradients and shadows.
 
 Flat fills are what make generated wallpapers look generated. Real ones are
 shaded -- a large gradient under everything, another across each shape, and
 enough of a shadow to say which shape is in front. None of it is expensive:
 they are all QPainter brushes.
+
+Kept deliberately subtle. A strong per-shape gradient stops reading as a lit
+surface and starts reading as an inflated bubble, which no amount of colour
+work recovers from.
 """
 
 from __future__ import annotations
 
 import math
-from typing import Sequence
-
 from PySide6.QtCore import QPointF
 from PySide6.QtGui import QBrush, QColor, QLinearGradient, QPainter, QPainterPath, QRadialGradient
 
@@ -60,41 +62,10 @@ def shape_brush(
     """A gradient across one shape, lit from a shared direction."""
     offset = QPointF(math.cos(light) * radius, math.sin(light) * radius)
     gradient = QLinearGradient(centre - offset, centre + offset)
-    spread = 0.075 * strength
+    spread = 0.032 * strength
     gradient.setColorAt(0.0, shift(color, spread, 0.95))
     gradient.setColorAt(1.0, shift(color, -spread, 1.05))
     return QBrush(gradient)
-
-
-def rounded(points: Sequence[QPointF], radius: float) -> QPainterPath:
-    """A closed path through the points with the corners rounded off."""
-    path = QPainterPath()
-    count = len(points)
-    if count < 3 or radius <= 0.0:
-        path.addPolygon(points if isinstance(points, list) else list(points))
-        path.closeSubpath()
-        return path
-
-    for i in range(count):
-        previous, current, following = points[i - 1], points[i], points[(i + 1) % count]
-        # Never round further than half an edge, or adjacent corners would
-        # overlap and the shape would fold in on itself.
-        before = _towards(current, previous, radius)
-        after = _towards(current, following, radius)
-        if i == 0:
-            path.moveTo(before)
-        else:
-            path.lineTo(before)
-        path.quadTo(current, after)
-    path.closeSubpath()
-    return path
-
-
-def _towards(origin: QPointF, target: QPointF, distance: float) -> QPointF:
-    dx, dy = target.x() - origin.x(), target.y() - origin.y()
-    length = math.hypot(dx, dy) or 1.0
-    step = min(distance, length / 2.0)
-    return QPointF(origin.x() + dx / length * step, origin.y() + dy / length * step)
 
 
 def drop_shadow(

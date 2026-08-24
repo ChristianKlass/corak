@@ -203,26 +203,6 @@ class TestShading(unittest.TestCase):
         self.assertAlmostEqual(to_oklch(darker)[0], 0.4, places=2)
         self.assertAlmostEqual(to_oklch(lighter)[2], to_oklch(base)[2], places=2)
 
-    def test_rounded_path_is_closed_and_inside_the_polygon(self) -> None:
-        from PySide6.QtCore import QPointF
-
-        square = [QPointF(0, 0), QPointF(100, 0), QPointF(100, 100), QPointF(0, 100)]
-        path = shading.rounded(square, 20)
-        bounds = path.boundingRect()
-        self.assertTrue(-0.5 <= bounds.left() and bounds.right() <= 100.5)
-        self.assertFalse(path.contains(QPointF(1, 1)))  # the corner is cut away
-        self.assertTrue(path.contains(QPointF(50, 50)))
-
-    def test_rounding_never_folds_a_shape_inward(self) -> None:
-        from PySide6.QtCore import QPointF
-
-        # A radius larger than the edge would otherwise carry adjacent corners
-        # past each other.
-        thin = [QPointF(0, 0), QPointF(10, 0), QPointF(10, 100), QPointF(0, 100)]
-        bounds = shading.rounded(thin, 500).boundingRect()
-        self.assertGreaterEqual(bounds.width(), 4.0)
-        self.assertGreaterEqual(bounds.height(), 40.0)
-
     def test_zero_depth_leaves_the_background_flat(self) -> None:
         from PySide6.QtGui import QImage, QPainter
 

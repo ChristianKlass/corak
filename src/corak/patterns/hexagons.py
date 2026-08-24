@@ -5,11 +5,11 @@ from __future__ import annotations
 import math
 
 from PySide6.QtCore import QPointF
-from PySide6.QtGui import QPainter, QPen, QPolygonF
+from PySide6.QtGui import QPainter, QPainterPath, QPen, QPolygonF
 
 from ..frame import Frame
 from ..noise import field
-from ..shading import drop_shadow, rounded, shape_brush, shift, underlay
+from ..shading import drop_shadow, shape_brush, shift, underlay
 from .base import pattern
 
 
@@ -39,7 +39,6 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     # One light direction for the whole image: shapes lit from different angles
     # read as a collage rather than a surface.
     light = rng.uniform(0, math.tau)
-    corner = r * rng.uniform(0.0, 0.32) * (1.0 if depth else 0.0)
     lift = r * 0.07 * depth
 
     # A visible gap is a deliberate look; below that threshold the tiles are
@@ -48,7 +47,7 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     # Thin: with shading doing the separating, a wide gap reads as heavy
     # leading between tiles rather than as depth.
     gap = rng.uniform(0.0, 0.018)
-    seamless = gap <= 0.006 and corner <= 0.0
+    seamless = gap <= 0.006
 
     # One extra ring past each edge so no partial tile is missing at the border.
     for col in range(-1, int(w / dx) + 2):
@@ -58,7 +57,9 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
             hue_t = hue_field(cx / w * 1.3, cy / h * 1.3)
             light_t = light_field(cx / w * 5.0, cy / h * 5.0) + rng.uniform(-0.05, 0.05)
             color = pal.shade(hue_t, light_t)
-            path = rounded(_corners(cx, cy, r), corner)
+            path = QPainterPath()
+            path.addPolygon(QPolygonF(_corners(cx, cy, r)))
+            path.closeSubpath()
 
             if lift > 0.0 and not seamless:
                 drop_shadow(painter, path, light, lift, depth)
