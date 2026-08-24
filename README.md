@@ -153,3 +153,8 @@ licensable part, but the credit is theirs:
 ## Licence
 
 MIT. See [LICENSE](LICENSE).
+
+## Colophon
+
+Written with AI assistance, which is how I work. The direction, the review, and
+the judgement about what was good enough are mine.
