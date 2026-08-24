@@ -55,7 +55,10 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     light = rng.uniform(0, math.tau)
 
     count = rng.randint(22, 48)
-    largest = frame.mm(rng.uniform(45.0, 105.0))
+    # Capped against the frame as well as measured in millimetres: on a small
+    # or narrow screen a shape sized only in millimetres can be most of the
+    # picture.
+    largest = min(frame.mm(rng.uniform(45.0, 105.0)), min(w, h) * 0.34)
     smallest = largest * rng.uniform(0.10, 0.22)
     # How sharply size falls away with distance. Without the bias most shapes
     # come out near the maximum and a few large ones swallow the frame.
@@ -67,6 +70,13 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     spread = colour_rng.choice((0.2, 0.45, 0.7, 1.0))
     # Enough to push the far shapes back, not enough to erase them.
     haze = colour_rng.uniform(0.18, 0.42) * depth
+
+    # How much of the frame the shapes may cover between them. Counting the
+    # area as it is spent is the only reliable way to tell crowded from sparse:
+    # a fixed number of shapes is dense when they are large and empty when they
+    # are small, and the same number reads differently on every screen shape.
+    budget = w * h * rng.uniform(0.07, 0.20)
+    spent = 0.0
 
     shapes = []
     for _ in range(count):
@@ -82,6 +92,13 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
         # a near shape is reliably the large sharp one.
         z = rng.random()
         size = smallest + (largest - smallest) * (z ** bias) * rng.uniform(0.8, 1.2)
+        # Overlap means the covered area is less than the total, so this is a
+        # budget rather than a measurement -- but it is the quantity that runs
+        # out, and stopping when it does is what keeps the frame open.
+        area = math.pi * (size / 2.0) ** 2
+        if spent + area > budget:
+            continue
+        spent += area
         shapes.append((z, x, y, size))
 
     # Depth of field needs something in focus. Left to chance every shape can

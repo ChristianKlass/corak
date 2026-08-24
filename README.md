@@ -205,6 +205,14 @@ a biased distribution so a few dominate, positions rejected against a density
 field so they gather and leave the rest of the frame open, and shapes drawn
 largest first so the small ones sit in front and the shadows stack correctly.
 
+How crowded a scattered image is has to be measured, not counted. A fixed number
+of shapes is dense when they are large and empty when they are small, and the
+same number reads differently on every screen shape — so shapes draw against an
+area budget, a fraction of the frame, and placement stops when it runs out.
+Overlap means the covered area is less than the total, which makes it a budget
+rather than a measurement; but it is the quantity that runs out, and stopping
+when it does is what keeps the frame open.
+
 Large, well-separated shapes can carry real hue differences. It was small
 adjacent cells that turned a multi-hue scheme into confetti, so `scatter` allows
 a much wider hue spread than the tiling patterns do.

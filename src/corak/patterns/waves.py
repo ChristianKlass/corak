@@ -58,9 +58,12 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
             # what separates stacked bands from a flat gradient.
             path = QPainterPath()
             path.addPolygon(shape)
+            # Light: a band is a sheet of paper lying on the one behind, not
+            # an object standing above it, so the shadow is a seam and not a
+            # dark stripe of its own.
             cast_shadows(
-                painter, frame, [(path, band * 0.16)], math.pi / 2, depth * 0.7,
-                divisor=4, color=shift(pal.background, -0.22),
+                painter, frame, [(path, band * 0.07)], math.pi / 2, depth * 0.28,
+                divisor=4, color=shift(pal.background, -0.14),
             )
             # Lit along the length rather than across it, so a band reads as a
             # curved surface instead of a flat cut-out.
