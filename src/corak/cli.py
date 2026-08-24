@@ -29,6 +29,19 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--history", type=int, metavar="N", help="show the last N designs and exit")
     parser.add_argument(
+        "--design",
+        metavar="SLUG",
+        help="set one exact design, named the way --history prints it",
+    )
+    parser.add_argument(
+        "--again",
+        type=int,
+        nargs="?",
+        const=1,
+        metavar="N",
+        help="set the Nth most recent wallpaper again (default the last one)",
+    )
+    parser.add_argument(
         "--install-desktop",
         action="store_true",
         help="add corak to the application menu and exit",
@@ -37,7 +50,7 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _rotate_headless() -> int:
+def _rotate_headless(design: str | None = None, recall: int | None = None) -> int:
     # No window is wanted, but QImage still needs a QGuiApplication, and the
     # offscreen plugin provides one without a display.
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -50,14 +63,39 @@ def _rotate_headless() -> int:
     from .store import Store
     from .wallpaper import WallpaperError
 
+    from .design import Design
+
     try:
         with Store() as store:
-            design, targets = rotate(load(), store=store)
-    except WallpaperError as exc:
+            wanted = None
+            if design is not None:
+                wanted = Design.parse(design)
+            elif recall is not None:
+                wanted = _recall(store, recall)
+            chosen, targets = rotate(load(), store=store, design=wanted)
+    except (WallpaperError, ValueError, LookupError) as exc:
         print(f"corak: {exc}", file=sys.stderr)
         return 1
-    print(describe(design, targets))
+    print(describe(chosen, targets))
     return 0
+
+
+def _recall(store, position: int):
+    """The Nth most recent design, counting each one once.
+
+    History holds a row per screen, so the last three rows are usually one
+    wallpaper; counting rows would make "the one before last" mean "the same
+    one, on another monitor".
+    """
+    if position < 1:
+        raise ValueError("--again takes a position from 1")
+    seen: list = []
+    for entry in store.recent(position * 12):
+        if entry.design not in seen:
+            seen.append(entry.design)
+        if len(seen) >= position:
+            return seen[position - 1]
+    raise LookupError(f"history holds only {len(seen)} design(s)")
 
 
 def _show_history(limit: int) -> int:
@@ -175,6 +213,10 @@ def main(argv: list[str] | None = None) -> int:
         return _add_theme(args.add_theme)
     if args.install_desktop:
         return _install_desktop()
+    if args.design:
+        return _rotate_headless(design=args.design)
+    if args.again is not None:
+        return _rotate_headless(recall=args.again)
     if args.next:
         return _rotate_headless()
 

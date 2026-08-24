@@ -141,12 +141,18 @@ class Store:
         return int(self._connection.execute("SELECT COUNT(*) FROM designs").fetchone()[0])
 
     def forget(self, paths: Iterable[str]) -> int:
-        """Drop rows whose images no longer exist."""
+        """Clear the file path on rows whose images have been deleted.
+
+        The row survives. A design is reproducible from its seeds, so it can
+        still be recalled long after the image it produced was pruned -- and
+        deleting the row instead meant history reached back only as far as the
+        dozen images kept on disk.
+        """
         paths = list(paths)
         if not paths:
             return 0
         with self._connection:
             cursor = self._connection.executemany(
-                "DELETE FROM designs WHERE path = ?", [(p,) for p in paths]
+                "UPDATE designs SET path = '' WHERE path = ?", [(p,) for p in paths]
             )
         return cursor.rowcount if cursor.rowcount and cursor.rowcount > 0 else 0

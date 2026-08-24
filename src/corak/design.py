@@ -27,6 +27,24 @@ class Design:
     def __str__(self) -> str:
         return self.slug()
 
+    @classmethod
+    def parse(cls, slug: str) -> "Design":
+        """Rebuild a design from its slug.
+
+        The slug is already what the history, the filenames and the window all
+        print, so it is the identifier the user has in front of them -- there is
+        no reason to invent a second one for recalling a wallpaper.
+        """
+        parts = slug.strip().split("-")
+        if len(parts) not in (3, 4):
+            raise ValueError(f"not a design: {slug}")
+        theme = parts[0] if len(parts) == 4 else ""
+        pattern, pattern_seed, palette_seed = parts[-3:]
+        try:
+            return cls(pattern, int(pattern_seed, 16), int(palette_seed, 16), theme)
+        except ValueError as exc:
+            raise ValueError(f"not a design: {slug}") from exc
+
 
 class History:
     """A linear back-stack. Down walks toward older designs."""

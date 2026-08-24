@@ -275,6 +275,20 @@ class TestThemes(unittest.TestCase):
             self.engine.render(design, 200, 120), self.engine.render(design, 200, 120)
         )
 
+    def test_a_design_survives_a_round_trip_through_its_slug(self) -> None:
+        for design in (
+            Design("hexagons", 0x1F2E3D, 0x4A5B6C, "tundra"),
+            Design("waves", 1, 2),
+        ):
+            with self.subTest(design=design):
+                self.assertEqual(Design.parse(design.slug()), design)
+
+    def test_a_slug_that_is_not_one_is_rejected(self) -> None:
+        for bad in ("", "nonsense", "waves-xyz-123", "a-b-c-d-e", "waves-1"):
+            with self.subTest(slug=bad):
+                with self.assertRaises(ValueError):
+                    Design.parse(bad)
+
     def test_arrow_actions_keep_the_theme(self) -> None:
         session = Session(self.engine, random.Random(2), theme=self.COOL)
         for action in (session.recolour, session.repattern, session.regenerate):

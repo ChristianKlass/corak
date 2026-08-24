@@ -165,10 +165,14 @@ class TestStore(unittest.TestCase):
         with Store(path) as reopened:
             self.assertEqual(reopened.count(), 1)
 
-    def test_forget_removes_named_images(self) -> None:
+    def test_forget_clears_the_path_but_keeps_the_row(self) -> None:
+        # A design is reproducible from its seeds, so it stays recallable long
+        # after the image it produced was pruned.
         self.store.record(self.design, "mono", {}, self._targets())
         self.store.forget(["/tmp/a.png"])
-        self.assertEqual([e.path for e in self.store.recent(9)], ["/tmp/b.png"])
+        self.assertEqual(self.store.count(), 2)
+        self.assertEqual(sorted(e.path for e in self.store.recent(9)), ["", "/tmp/b.png"])
+        self.assertTrue(all(e.design == self.design for e in self.store.recent(9)))
 
 
 class TestRotationHousekeeping(unittest.TestCase):

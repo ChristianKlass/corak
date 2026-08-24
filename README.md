@@ -23,6 +23,8 @@ python3 -m venv .venv
 | `corak` | open the window |
 | `corak --next` | generate and set a wallpaper, no window — what the timer runs |
 | `corak --history 20` | the last 20 designs |
+| `corak --again [N]` | set the Nth most recent wallpaper again |
+| `corak --design SLUG` | set one exact design, named as `--history` prints it |
 | `corak --list-patterns` | pattern names |
 | `corak --install-desktop` | add corak to the application menu |
 | `corak --list-themes` | list themes and where they came from |
@@ -83,8 +85,14 @@ silently resets everything. Unknown keys are ignored and missing ones fall back
 to defaults, so a file from a newer version does not stop an older one starting.
 
 Every generated wallpaper is logged to `$XDG_DATA_HOME/corak/history.db`, one
-row per screen, holding the pattern, both seeds, the scheme, the effects and the
-image path — enough to rebuild any past wallpaper exactly.
+row per screen, holding the pattern, both seeds, the theme, the scheme, the
+effects and the image path — enough to rebuild any past wallpaper exactly. When
+an image is pruned its row survives with the path cleared, because the design
+does not need the file to be reproduced; deleting the row instead meant history
+reached back only as far as the dozen images kept on disk.
+
+A design's slug is what the history, the filenames and the window all print, so
+it is the identifier already in front of you — `--design` takes it back.
 
 ## Themes
 
