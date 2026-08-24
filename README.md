@@ -300,6 +300,11 @@ the credit, and anyone redistributing this should know the terms:
 
 Each theme carries `source` and `license` fields, shown by `corak --list-themes`.
 
+## Licence
+
+MIT — see [LICENSE](LICENSE). The borrowed palettes above are MIT too, so
+nothing here conflicts; keep their credits with any copy that carries them.
+
 ## Tests and linting
 
 ```sh
