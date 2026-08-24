@@ -305,9 +305,19 @@ class Palette:
             # Weighted toward what the theme asked for, but able to reach past
             # it, so a muted theme still has a vivid variant in it.
             strongest = max(to_oklch(c)[1] for c in colors) or 0.001
+            # Never below what the palette already carries, except by the one
+            # deliberate step down. An absolute target under a well-chosen
+            # palette's own chroma just flattens it -- which was turning a
+            # careful set of accents into greys.
             target = vary.choices(
-                (strongest, strongest * 0.7, 0.07, 0.10, 0.14),
-                weights=(34, 16, 18, 18, 14),
+                (
+                    strongest,
+                    strongest * 0.75,
+                    max(strongest, 0.10),
+                    max(strongest, 0.14),
+                    max(strongest, 0.19),
+                ),
+                weights=(30, 12, 20, 20, 18),
             )[0]
             gain = min(6.0, target / strongest)
             colors = [
@@ -408,6 +418,21 @@ class Palette:
         # part of the scheme than over all of it.
         span = self._t0 + (self._t1 - self._t0) * _clamp(hue_t)
         return oklch(lo + (hi - lo) * _clamp(light_t), self.chroma * chroma, self.hue_at(span))
+
+    def vivid(self, t: float) -> QColor:
+        """One of the palette's more chromatic colours.
+
+        A palette that carries its own dark ground -- an editor scheme, say --
+        is half near-neutral. Sampling it evenly is right for a surface, but a
+        light source made from a grey is a grey, so anything standing for light
+        draws from the coloured half.
+        """
+        if not self.colors:
+            return QColor(0, 0, 0)
+        ranked = sorted(self.colors, key=lambda c: to_oklch(c)[1], reverse=True)
+        upper = ranked[: max(2, (len(ranked) + 1) // 2)]
+        index = min(len(upper) - 1, max(0, int(_clamp(t) * len(upper))))
+        return upper[index]
 
     def accent(self) -> QColor:
         """The palette's most saturated colour.

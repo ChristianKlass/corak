@@ -14,6 +14,7 @@ from PySide6.QtGui import QColor, QImage, QPainter, QPen
 
 from ..frame import Frame
 from ..noise import field
+from ..palette import oklch, to_oklch
 from ..shading import shift, underlay
 from .base import pattern
 
@@ -41,6 +42,11 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     # Translucent enough that overlaps mix rather than occlude, which is where
     # the colours in the middle of a cluster come from.
     alpha = colour_rng.uniform(0.32, 0.62)
+    # Out-of-focus highlights are light, not pigment. Laid over a dark ground as
+    # translucent paint a disc can only darken toward the background, which is
+    # why this pattern came out dim on every dark theme; added instead, the
+    # discs sit above the ground and overlaps brighten.
+    lift = colour_rng.uniform(0.5, 0.75)
     accent_odds = colour_rng.choice((0.05, 0.12, 0.22))
 
     discs = []
@@ -58,7 +64,8 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
         if not band:
             continue
         if divisor <= 1 or depth <= 0.0:
-            _discs(painter, band, frame, pal, rng, colour_rng, hue_field, spread, alpha, accent_odds)
+            _discs(painter, band, frame, pal, rng, colour_rng, hue_field, spread, alpha,
+                   accent_odds, lift)
             continue
         layer = QImage(
             max(1, w // divisor), max(1, h // divisor), QImage.Format.Format_ARGB32_Premultiplied
@@ -68,7 +75,8 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
         try:
             into.setRenderHint(QPainter.RenderHint.Antialiasing, True)
             into.scale(1.0 / divisor, 1.0 / divisor)
-            _discs(into, band, frame, pal, rng, colour_rng, hue_field, spread, alpha, accent_odds)
+            _discs(into, band, frame, pal, rng, colour_rng, hue_field, spread, alpha,
+                   accent_odds, lift)
         finally:
             into.end()
         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
@@ -77,19 +85,42 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     _rings(painter, frame, pal, rng, colour_rng, depth)
 
 
-def _discs(painter, band, frame, pal, rng, colour_rng, hue_field, spread, alpha, accent_odds=0.0) -> None:
+def _discs(painter, band, frame, pal, rng, colour_rng, hue_field, spread, alpha,
+           accent_odds=0.0, lift=0.7) -> None:
     w, h = frame.width, frame.height
+    painter.save()
     painter.setPen(Qt.PenStyle.NoPen)
+    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
     for z, x, y, radius in band:
         hue_t = hue_field(min(1.0, max(0.0, x / w)), min(1.0, max(0.0, y / h)))
         hue_t += colour_rng.uniform(-spread, spread)
-        color = QColor(pal.accent() if colour_rng.random() < accent_odds else pal.pick(hue_t))
-        # Nearer discs are brighter as well as larger; the far ones sink into
-        # the ground.
-        color = shift(color, (z - 0.45) * 0.20)
-        color.setAlphaF(alpha * (0.55 + 0.45 * z))
-        painter.setBrush(color)
+        color = pal.accent() if colour_rng.random() < accent_odds else pal.vivid(hue_t)
+
+        # Raised to a floor rather than by a step: a dark palette entry
+        # brightened by a step is still dark, and there is nothing to add.
+        lightness, chroma, hue = to_oklch(color)
+        # Chroma raised along with lightness. Adding light pushes every channel
+        # toward white, so a disc that keeps its original chroma while getting
+        # brighter comes out grey -- and a pile of them comes out white.
+        # A floor, not an addition. Adding to a colour that is already light
+        # lands at a lightness of 1, where the gamut holds no chroma at all --
+        # the highlight was being forced to white by construction.
+        lit = oklch(min(0.86, max(lift, lightness)), chroma * 1.5, hue)
+
+        # Nearer discs carry more light; the far ones fall back into the ground.
+        # Added light accumulates where discs overlap, so a cluster clips to
+        # white unless each one contributes little. Scaled down again by how
+        # light the disc already is.
+        strength = alpha * (0.45 + 0.55 * z) * (1.0 - 0.45 * lightness)
+        painter.setBrush(
+            QColor(
+                round(lit.red() * strength),
+                round(lit.green() * strength),
+                round(lit.blue() * strength),
+            )
+        )
         painter.drawEllipse(QRectF(x - radius, y - radius, radius * 2, radius * 2))
+    painter.restore()
 
 
 def _rings(painter, frame, pal, rng, colour_rng, depth) -> None:
