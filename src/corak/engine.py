@@ -8,7 +8,7 @@ headless CLI running under the offscreen platform plugin.
 from __future__ import annotations
 
 import random
-from typing import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 
 from PySide6.QtGui import QImage, QPainter
 
@@ -17,7 +17,8 @@ from .design import Design
 from .frame import Frame
 from .palette import Palette
 from .patterns import REGISTRY, names
-from .themes import Theme, get as get_theme
+from .themes import Theme
+from .themes import get as get_theme
 
 SEED_MAX = 1 << 24
 
@@ -55,10 +56,7 @@ class Engine:
     ) -> Design:
         """Build a design, optionally holding the pattern or the palette fixed."""
         resolved = theme if isinstance(theme, Theme) else get_theme(theme or "", self.themes)
-        if theme is None:
-            theme_id = ""
-        else:
-            theme_id = resolved.id
+        theme_id = "" if theme is None else resolved.id
 
         if pattern is None:
             choices = [p for p in self.enabled if p in REGISTRY]

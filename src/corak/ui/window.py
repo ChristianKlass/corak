@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from dataclasses import replace
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QCloseEvent, QKeyEvent
@@ -17,8 +18,6 @@ from PySide6.QtWidgets import (
 
 from .. import effects as fx
 from .. import scheduler
-from dataclasses import replace
-
 from ..config import Settings, save
 from ..design import Design
 from ..frame import NOMINAL_PX_PER_MM
@@ -204,7 +203,7 @@ class MainWindow(QMainWindow):
             self._warning = fx.warning(name) or ""
         self._show(self.session.current)
 
-    def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802 (Qt naming)
+    def closeEvent(self, event: QCloseEvent) -> None:
         # Hiding rather than quitting keeps the tray icon usable; the tray's
         # Quit action is what actually ends the process.
         if self.isVisible() and QSystemTrayAvailable():
@@ -213,7 +212,7 @@ class MainWindow(QMainWindow):
             return
         super().closeEvent(event)
 
-    def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802 (Qt naming)
+    def keyPressEvent(self, event: QKeyEvent) -> None:
         key = event.key()
         if key == Qt.Key.Key_Up:
             self._show(self.session.regenerate())
@@ -235,7 +234,7 @@ class MainWindow(QMainWindow):
             super().keyPressEvent(event)
 
 
-def QSystemTrayAvailable() -> bool:  # noqa: N802 (matches the Qt spelling it wraps)
+def QSystemTrayAvailable() -> bool:
     from PySide6.QtWidgets import QSystemTrayIcon
 
     return QSystemTrayIcon.isSystemTrayAvailable()

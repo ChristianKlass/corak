@@ -11,9 +11,9 @@ import json
 import os
 import sqlite3
 import time
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Sequence
 
 from .design import Design
 
@@ -76,7 +76,7 @@ class Store:
     def close(self) -> None:
         self._connection.close()
 
-    def __enter__(self) -> "Store":
+    def __enter__(self) -> Store:
         return self
 
     def __exit__(self, *exc) -> None:

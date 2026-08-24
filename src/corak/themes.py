@@ -13,11 +13,11 @@ changed by deriving from one that already works.
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass, field, replace
 import os
+from collections.abc import Sequence
+from dataclasses import asdict, dataclass, field, replace
 from importlib import resources
 from pathlib import Path
-from typing import Sequence
 
 from PySide6.QtGui import QColor
 
@@ -60,7 +60,7 @@ class Theme:
     def built_in(self) -> bool:
         return not self.derived_from
 
-    def derive(self, **changes) -> "Theme":
+    def derive(self, **changes) -> Theme:
         """A variant of this theme, keeping everything not named."""
         identifier = changes.pop("id", None) or f"{self.id}-custom"
         name = changes.pop("name", None) or f"{self.name} (modified)"
@@ -83,7 +83,7 @@ class Theme:
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Theme":
+    def from_dict(cls, data: dict) -> Theme:
         base = cls(id=str(data.get("id", "")), name=str(data.get("name", "")))
         hue = data.get("hue_range")
         chroma = data.get("chroma") or base.chroma
@@ -213,13 +213,11 @@ def problems(data: dict) -> list[str]:
         value = data.get(key)
         if value is None:
             continue
-        if not (isinstance(value, (list, tuple)) and len(value) == 2):
-            found.append(f"{key} must be two numbers")
-        elif not all(isinstance(v, (int, float)) for v in value):
+        if not (isinstance(value, (list, tuple)) and len(value) == 2) or not all(isinstance(v, (int, float)) for v in value):
             found.append(f"{key} must be two numbers")
         elif value[0] > value[1]:
             found.append(f"{key} runs backwards")
-        elif not (0.0 <= value[0] and value[1] <= limit):
+        elif not (value[0] >= 0.0 and value[1] <= limit):
             found.append(f"{key} must lie between 0 and {limit}")
 
     hue = data.get("hue_range")

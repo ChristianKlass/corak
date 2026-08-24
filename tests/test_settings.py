@@ -17,24 +17,26 @@ os.environ["XDG_CONFIG_HOME"] = os.path.join(_isolated, "config")
 os.environ["XDG_DATA_HOME"] = os.path.join(_isolated, "data")
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtGui import QGuiApplication  # noqa: E402
+from PySide6.QtGui import QGuiApplication
 
 _app = QGuiApplication.instance() or QGuiApplication([])
 
-from corak import desktop  # noqa: E402
-from corak import scheduler  # noqa: E402
-from corak import themes  # noqa: E402
-from corak.themes import Theme  # noqa: E402
-from corak.config import Settings, load, save  # noqa: E402
-from corak.engine import Engine  # noqa: E402
-from corak.patterns import names  # noqa: E402
-from corak.store import Store  # noqa: E402
-from corak import wallpaper as wp  # noqa: E402
-from corak.config import Settings as _S  # noqa: E402,F401
-from corak import rotation  # noqa: E402
-from corak.wallpaper import Target  # noqa: E402
+from test_wallpaper import screen
 
-from test_wallpaper import screen  # noqa: E402
+from corak import (
+    desktop,
+    rotation,
+    scheduler,
+    themes,
+)
+from corak import wallpaper as wp
+from corak.config import Settings, load, save
+from corak.config import Settings as _S  # noqa: F401
+from corak.engine import Engine
+from corak.patterns import names
+from corak.store import Store
+from corak.themes import Theme
+from corak.wallpaper import Target
 
 
 class TestSettings(unittest.TestCase):

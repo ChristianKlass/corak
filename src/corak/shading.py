@@ -13,11 +13,12 @@ work recovers from.
 from __future__ import annotations
 
 import math
+
 from PySide6.QtCore import QPointF, QRect, Qt
 from PySide6.QtGui import (
     QBrush,
-    QImage,
     QColor,
+    QImage,
     QLinearGradient,
     QPainter,
     QPainterPath,

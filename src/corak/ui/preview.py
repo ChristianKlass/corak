@@ -17,7 +17,7 @@ class PreviewWidget(QWidget):
         self._image = image
         self.update()
 
-    def paintEvent(self, event: QPaintEvent) -> None:  # noqa: N802 (Qt naming)
+    def paintEvent(self, event: QPaintEvent) -> None:
         painter = QPainter(self)
         painter.fillRect(self.rect(), QColor(24, 24, 26))
         if self._image is None or self._image.isNull():

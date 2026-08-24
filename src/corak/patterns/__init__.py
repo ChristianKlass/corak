@@ -6,7 +6,6 @@ touching when one is added.
 
 from __future__ import annotations
 
-from .base import REGISTRY, pattern  # noqa: F401
 from . import (  # noqa: F401
     bokeh,
     constellation,
@@ -16,6 +15,7 @@ from . import (  # noqa: F401
     triangles,
     waves,
 )
+from .base import REGISTRY, pattern  # noqa: F401
 
 
 def names() -> list[str]:

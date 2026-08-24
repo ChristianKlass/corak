@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import math
 import random
-from typing import Iterable, Sequence
+from collections.abc import Iterable, Sequence
 
 from PySide6.QtGui import QColor
 
@@ -64,10 +64,10 @@ def oklab_to_rgb(ll: float, a: float, b: float) -> tuple[float, float, float]:
 
 def rgb_to_oklab(r: float, g: float, b: float) -> tuple[float, float, float]:
     """Linear-light sRGB to OKLab."""
-    l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b
-    m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b
-    s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b
-    l_, m_, s_ = _cbrt(l), _cbrt(m), _cbrt(s)
+    long = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b
+    medium = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b
+    short = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b
+    l_, m_, s_ = _cbrt(long), _cbrt(medium), _cbrt(short)
     return (
         0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
         1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
@@ -251,7 +251,7 @@ class Palette:
         self._t1 = self._t0 + width
 
     @classmethod
-    def for_theme(cls, seed: int, theme, dark: bool | None = None) -> "Palette":
+    def for_theme(cls, seed: int, theme, dark: bool | None = None) -> Palette:
         """A palette obeying a theme's colour constraints."""
         if getattr(theme, "colors", ()):
             return cls.from_hex(
@@ -269,7 +269,7 @@ class Palette:
     @classmethod
     def from_hex(
         cls, codes: Iterable[str], dark: bool | None = None, seed: int | None = None
-    ) -> "Palette":
+    ) -> Palette:
         """Build a palette from explicit hex codes, ordered dark to light.
 
         The seed does not invent colours -- the point of giving a palette is

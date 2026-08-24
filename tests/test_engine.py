@@ -7,8 +7,8 @@ platform plugin lets that happen without a display.
 from __future__ import annotations
 
 import os
-import tempfile
 import random
+import tempfile
 import unittest
 from unittest import mock
 
@@ -19,16 +19,16 @@ os.environ["XDG_CONFIG_HOME"] = os.path.join(_isolated, "config")
 os.environ["XDG_DATA_HOME"] = os.path.join(_isolated, "data")
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtGui import QGuiApplication  # noqa: E402
+from PySide6.QtGui import QGuiApplication
 
 _app = QGuiApplication.instance() or QGuiApplication([])
 
-from corak.design import Design, History  # noqa: E402
-from corak.engine import Engine, NoPatternsEnabled, UnknownPattern  # noqa: E402
-from corak.patterns import names  # noqa: E402
-from corak.palette import Palette, to_oklch  # noqa: E402
-from corak.session import Session  # noqa: E402
-from corak import themes  # noqa: E402
+from corak import themes
+from corak.design import Design, History
+from corak.engine import Engine, NoPatternsEnabled, UnknownPattern
+from corak.palette import Palette, to_oklch
+from corak.patterns import names
+from corak.session import Session
 
 
 class TestEngine(unittest.TestCase):
@@ -285,9 +285,8 @@ class TestThemes(unittest.TestCase):
 
     def test_a_slug_that_is_not_one_is_rejected(self) -> None:
         for bad in ("", "nonsense", "waves-xyz-123", "a-b-c-d-e", "waves-1"):
-            with self.subTest(slug=bad):
-                with self.assertRaises(ValueError):
-                    Design.parse(bad)
+            with self.subTest(slug=bad), self.assertRaises(ValueError):
+                Design.parse(bad)
 
     def test_arrow_actions_keep_the_theme(self) -> None:
         session = Session(self.engine, random.Random(2), theme=self.COOL)

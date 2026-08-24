@@ -14,7 +14,7 @@ happen to give -- often pinned to one end, so every shape takes the same colour.
 from __future__ import annotations
 
 import math
-from typing import Callable
+from collections.abc import Callable
 
 SAMPLES = 17
 

@@ -12,9 +12,9 @@ import os
 import shutil
 import subprocess
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence
 
 from PySide6.QtGui import QImage
 
@@ -124,7 +124,7 @@ class PlasmaBackend(Backend):
         # ordering, but the positions are the same in both.
         by_position = {f"{t.screen.x},{t.screen.y}": str(t.path) for t in targets}
         return (
-            "var byPosition = %s;\n"
+            f"var byPosition = {json.dumps(by_position)};\n"
             "var all = desktops();\n"
             "for (var i = 0; i < all.length; i++) {\n"
             "    var d = all[i];\n"
@@ -136,7 +136,7 @@ class PlasmaBackend(Backend):
             "    d.writeConfig('Image', 'file://' + file);\n"
             "    d.writeConfig('FillMode', 2);\n"
             "    d.reloadConfig();\n"
-            "}\n" % json.dumps(by_position)
+            "}\n"
         )
 
     def apply(self, targets: Sequence[Target]) -> None:

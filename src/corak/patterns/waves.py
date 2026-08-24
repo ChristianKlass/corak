@@ -48,10 +48,13 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
             u = x / w
             y = base + local_amp * math.sin(u * math.tau * freq + phase) * (1.0 + drift * u)
             curve.append(QPointF(x, y))
-        shape = QPolygonF(curve + [QPointF(float(w), float(h)), QPointF(0.0, float(h))])
+        shape = QPolygonF([*curve, QPointF(float(w), float(h)), QPointF(0.0, float(h))])
 
         along = (i + 1) / bands
-        color = pal.shade(hue_base + hue_span * along, along, relief=0.16)
+        # The field was built and then ignored, so a band's colour followed its
+        # index alone and every band was one flat hue across the whole frame.
+        drift = hue_field(0.5, base / h)
+        color = pal.shade(hue_base + hue_span * along + 0.12 * (drift - 0.5), along, relief=0.16)
 
         if depth > 0.0:
             # The band in front throws a shadow onto the one behind, which is

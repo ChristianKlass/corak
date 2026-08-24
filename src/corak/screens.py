@@ -175,7 +175,7 @@ def detect() -> list[Screen]:
     return screens
 
 
-def frame_for(screen: "Screen") -> Frame:
+def frame_for(screen: Screen) -> Frame:
     return Frame(screen.width, screen.height, screen.px_per_mm)
 
 

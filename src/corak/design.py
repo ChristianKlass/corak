@@ -28,7 +28,7 @@ class Design:
         return self.slug()
 
     @classmethod
-    def parse(cls, slug: str) -> "Design":
+    def parse(cls, slug: str) -> Design:
         """Rebuild a design from its slug.
 
         The slug is already what the history, the filenames and the window all

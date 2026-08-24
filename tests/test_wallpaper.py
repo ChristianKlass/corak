@@ -22,14 +22,14 @@ os.environ["XDG_CONFIG_HOME"] = os.path.join(_isolated, "config")
 os.environ["XDG_DATA_HOME"] = os.path.join(_isolated, "data")
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtGui import QGuiApplication  # noqa: E402
+from PySide6.QtGui import QGuiApplication
 
 _app = QGuiApplication.instance() or QGuiApplication([])
 
-from corak import screens as sc  # noqa: E402
-from corak import wallpaper as wp  # noqa: E402
-from corak.engine import Engine  # noqa: E402
-from corak.screens import Screen  # noqa: E402
+from corak import screens as sc
+from corak import wallpaper as wp
+from corak.engine import Engine
+from corak.screens import Screen
 
 
 def screen(name="DP-1", w=3440, h=1440, x=0, y=0, primary=True) -> Screen:
@@ -308,15 +308,11 @@ class TestPreviewFidelity(unittest.TestCase):
         self.assertAlmostEqual(window._preview_density(3440), 4.31, places=3)
 
     def test_a_preview_matches_the_full_size_render(self) -> None:
-        import random
 
-        from corak.engine import Engine
         from corak.frame import Frame
 
         # Same design at two sizes with matched density puts a feature at the
         # same fraction of the frame.
-        engine = Engine()
-        design = engine.new_design(random.Random(3), pattern="scatter")
         big = Frame(3440, 1440, 4.31)
         small = Frame(860, 360, 4.31 * 860 / 3440)
         self.assertAlmostEqual(big.mm(50) / big.width, small.mm(50) / small.width, places=6)

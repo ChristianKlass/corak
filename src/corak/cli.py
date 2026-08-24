@@ -59,11 +59,10 @@ def _rotate_headless(design: str | None = None, recall: int | None = None) -> in
     QGuiApplication.instance() or QGuiApplication([])
 
     from .config import load
+    from .design import Design
     from .rotation import describe, rotate
     from .store import Store
     from .wallpaper import WallpaperError
-
-    from .design import Design
 
     try:
         with Store() as store:
@@ -135,12 +134,15 @@ def _list_themes() -> int:
 def _add_theme(source: str) -> int:
     """Validate a theme document and install it for the user."""
     import json
-    import shutil
 
     from .themes import Theme, problems, user_dir
 
     try:
-        raw = sys.stdin.read() if source == "-" else open(source, encoding="utf-8").read()
+        if source == "-":
+            raw = sys.stdin.read()
+        else:
+            with open(source, encoding="utf-8") as handle:
+                raw = handle.read()
         documents = json.loads(raw)
     except (OSError, ValueError) as exc:
         print(f"corak: {exc}", file=sys.stderr)

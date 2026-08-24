@@ -7,8 +7,6 @@ are what stop it reading as a blur of the background rather than as light.
 
 from __future__ import annotations
 
-import math
-
 from PySide6.QtCore import QRect, QRectF, Qt
 from PySide6.QtGui import QColor, QImage, QPainter, QPen
 

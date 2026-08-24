@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import math
 
-from PySide6.QtCore import QPointF, Qt
+from PySide6.QtCore import QPointF
 from PySide6.QtGui import QLinearGradient, QPainter, QPen
 
 from ..frame import Frame
@@ -36,7 +36,7 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     largest = min(w, h) * rng.uniform(0.30, 0.55)
 
     shapes = []
-    for i in range(count):
+    for _i in range(count):
         cx = rng.uniform(-0.15, 1.15) * w
         cy = rng.uniform(-0.15, 1.15) * h
         radius = largest * rng.uniform(0.35, 1.0)

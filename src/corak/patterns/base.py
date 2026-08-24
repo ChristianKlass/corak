@@ -8,7 +8,7 @@ same design keeps its apparent scale across displays of different densities.
 
 from __future__ import annotations
 
-from typing import Callable, Dict
+from collections.abc import Callable
 
 from PySide6.QtGui import QPainter
 
@@ -17,7 +17,7 @@ from ..palette import Palette
 
 PatternFn = Callable[[QPainter, Frame, "object", Palette], None]
 
-REGISTRY: Dict[str, PatternFn] = {}
+REGISTRY: dict[str, PatternFn] = {}
 
 
 def pattern(name: str) -> Callable[[PatternFn], PatternFn]:

@@ -8,7 +8,7 @@ Python turns an instant render into a several-second one.
 from __future__ import annotations
 
 import random
-from typing import Mapping
+from collections.abc import Mapping
 
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QBrush, QColor, QImage, QPainter, QRadialGradient

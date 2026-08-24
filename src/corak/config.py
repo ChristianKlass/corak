@@ -54,16 +54,16 @@ class Settings:
     def active_theme(self) -> Theme:
         return get(self.theme, self.themes())
 
-    def with_theme(self, theme: Theme) -> "Settings":
+    def with_theme(self, theme: Theme) -> Settings:
         """Store a derived theme and make it active, replacing any namesake."""
         others = [t for t in self.custom_themes if t.get("id") != theme.id]
         return replace(
             self,
             theme=theme.id,
-            custom_themes=(others + [theme.to_dict()]) if not theme.built_in else others,
+            custom_themes=([*others, theme.to_dict()]) if not theme.built_in else others,
         )
 
-    def normalised(self) -> "Settings":
+    def normalised(self) -> Settings:
         """Clamp to usable values, dropping anything no longer known."""
         known = set(names())
         patterns = [p for p in self.patterns if p in known]
@@ -86,7 +86,7 @@ class Settings:
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Settings":
+    def from_dict(cls, data: dict) -> Settings:
         defaults = cls()
         return cls(
             interval_minutes=data.get("interval_minutes", defaults.interval_minutes),

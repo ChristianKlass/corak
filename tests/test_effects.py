@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import os
-import tempfile
 import random
 import statistics
+import tempfile
 import unittest
 
 # Tests must not see the running user's installed themes or settings: a theme
@@ -15,15 +15,17 @@ os.environ["XDG_CONFIG_HOME"] = os.path.join(_isolated, "config")
 os.environ["XDG_DATA_HOME"] = os.path.join(_isolated, "data")
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtGui import QColor, QGuiApplication  # noqa: E402
+from PySide6.QtGui import QColor, QGuiApplication
 
 _app = QGuiApplication.instance() or QGuiApplication([])
 
-from corak import effects as fx  # noqa: E402
-from corak import shading  # noqa: E402
-from corak.frame import Frame  # noqa: E402
-from corak.engine import Engine  # noqa: E402
-from corak.palette import (  # noqa: E402
+import itertools
+
+from corak import effects as fx
+from corak import shading
+from corak.engine import Engine
+from corak.frame import Frame
+from corak.palette import (
     SCHEMES,
     Palette,
     blend,
@@ -184,7 +186,7 @@ class TestPerceptualColour(unittest.TestCase):
         palette = Palette(21, dark=False)
         steps = [to_oklab(c)[0] for c in palette.colors]
         self.assertEqual(steps, sorted(steps))
-        gaps = [b - a for a, b in zip(steps, steps[1:])]
+        gaps = [b - a for a, b in itertools.pairwise(steps)]
         # Even to within a fifth of the mean step; HSL cannot promise this.
         self.assertLess(max(gaps) - min(gaps), statistics.fmean(gaps) * 0.2)
 
@@ -261,7 +263,6 @@ class TestShading(unittest.TestCase):
         self.assertAlmostEqual(to_oklch(lighter)[2], to_oklch(base)[2], places=2)
 
     def test_capsule_is_centred_on_the_point_given(self) -> None:
-        from PySide6.QtCore import QPointF
 
         bounds = shading.capsule(100.0, 50.0, 80.0, 40.0, 10.0, 0.0).boundingRect()
         self.assertAlmostEqual(bounds.center().x(), 100.0, places=3)

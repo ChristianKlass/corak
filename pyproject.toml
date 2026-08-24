@@ -9,6 +9,9 @@ description = "Procedurally generated geometric wallpapers for Linux desktops"
 requires-python = ">=3.11"
 dependencies = ["PySide6>=6.7"]
 
+[project.optional-dependencies]
+dev = ["ruff>=0.6"]
+
 [project.scripts]
 corak = "corak.cli:main"
 
@@ -17,3 +20,27 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 corak = ["data/themes/*.json"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle
+    "F",     # pyflakes: undefined names, unused imports and variables
+    "I",     # import order
+    "UP",    # constructs superseded by the target Python
+    "B",     # bugbear: likely mistakes rather than style
+    "SIM",   # simplifications
+    "RUF",
+]
+ignore = [
+    "E501",  # line length is the formatter's business, not the linter's
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Qt needs an application object before any of this can be imported, so the
+# imports genuinely cannot come first.
+# Stacked mock.patch contexts read better one per line than combined.
+"tests/*" = ["E402", "SIM117"]

@@ -276,8 +276,15 @@ the credit, and anyone redistributing this should know the terms:
 
 Each theme carries `source` and `license` fields, shown by `corak --list-themes`.
 
-## Tests
+## Tests and linting
 
 ```sh
 .venv/bin/python -m unittest discover -s tests
+.venv/bin/python -m pip install -e ".[dev]"
+.venv/bin/ruff check src tests
 ```
+
+Ruff earns its place here for one rule in particular. `F841` catches a value
+unpacked and then never used, which is exactly the shape of a bug that cost a
+debugging round trip: a blend function unpacked its blue channel into `blue`
+and then read `b`, which was still the colour argument.
