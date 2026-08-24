@@ -333,7 +333,10 @@ class Palette:
             palette._t0, palette._t1 = 0.0, 1.0
         else:
             rng = random.Random(seed)
-            width = rng.uniform(0.35, 1.0)
+            # Most of the palette, always. A narrow slice of a ramp is a
+            # cohesion device; a narrow slice of a set of distinct hues is just
+            # one of those hues, and the image comes out monochrome.
+            width = rng.uniform(0.62, 1.0)
             palette._t0 = rng.uniform(0.0, 1.0 - width)
             palette._t1 = palette._t0 + width
             # Running the ramp the other way puts the pale colours where the
