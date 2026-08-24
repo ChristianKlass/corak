@@ -38,6 +38,8 @@ class Theme:
     # Multiplies every feature size, so a theme can read as bold or as fine
     # without each pattern needing its own setting.
     scale: float = 1.0
+    # Gradient and shadow strength, 0 for flat fills.
+    depth: float = 1.0
     derived_from: str = ""
 
     @property
@@ -91,6 +93,7 @@ class Theme:
                 if v > 0.0
             },
             scale=float(data.get("scale", 1.0)),
+            depth=float(data.get("depth", 1.0)),
             derived_from=str(data.get("derived_from", "")),
         )
 

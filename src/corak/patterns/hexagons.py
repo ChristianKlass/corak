@@ -9,16 +9,15 @@ from PySide6.QtGui import QPainter, QPen, QPolygonF
 
 from ..frame import Frame
 from ..noise import field
+from ..shading import drop_shadow, rounded, shape_brush, shift, underlay
 from .base import pattern
 
 
-def _hexagon(cx: float, cy: float, r: float) -> QPolygonF:
-    return QPolygonF(
-        [
-            QPointF(cx + r * math.cos(math.pi / 3.0 * i), cy + r * math.sin(math.pi / 3.0 * i))
-            for i in range(6)
-        ]
-    )
+def _corners(cx: float, cy: float, r: float) -> list[QPointF]:
+    return [
+        QPointF(cx + r * math.cos(math.pi / 3.0 * i), cy + r * math.sin(math.pi / 3.0 * i))
+        for i in range(6)
+    ]
 
 
 @pattern("hexagons")
@@ -28,12 +27,23 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     dx = r * 1.5
     dy = r * math.sqrt(3.0)
     f = field(rng)
+    depth = frame.depth
+
+    underlay(painter, frame, pal, rng, depth)
+
+    # One light direction for the whole image: shapes lit from different angles
+    # read as a collage rather than a surface.
+    light = rng.uniform(0, math.tau)
+    corner = r * rng.uniform(0.0, 0.32) * (1.0 if depth else 0.0)
+    lift = r * 0.07 * depth
 
     # A visible gap is a deliberate look; below that threshold the tiles are
     # meant to touch, and each is stroked in its own colour so antialiasing
     # cannot leave a hairline of background along the shared edges.
-    gap = rng.uniform(0.0, 0.045)
-    seamless = gap <= 0.02
+    # Thin: with shading doing the separating, a wide gap reads as heavy
+    # leading between tiles rather than as depth.
+    gap = rng.uniform(0.0, 0.018)
+    seamless = gap <= 0.006 and corner <= 0.0
 
     # One extra ring past each edge so no partial tile is missing at the border.
     for col in range(-1, int(w / dx) + 2):
@@ -42,8 +52,16 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
             cy = row * dy + (dy / 2.0 if col % 2 else 0.0)
             t = f(cx / w * 6.0, cy / h * 6.0) + rng.uniform(-0.06, 0.06)
             color = pal.ramp(t)
-            painter.setBrush(color)
-            painter.setPen(
-                QPen(color, 1.0) if seamless else QPen(pal.background, r * gap * 2.0)
+            path = rounded(_corners(cx, cy, r), corner)
+
+            if lift > 0.0 and not seamless:
+                drop_shadow(painter, path, light, lift, depth)
+            painter.setBrush(
+                shape_brush(color, QPointF(cx, cy), r, light, depth) if depth else color
             )
-            painter.drawPolygon(_hexagon(cx, cy, r))
+            painter.setPen(
+                QPen(color, 1.0)
+                if seamless
+                else QPen(shift(pal.background, 0.10), r * gap * 2.0)
+            )
+            painter.drawPath(path)

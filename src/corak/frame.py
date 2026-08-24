@@ -24,6 +24,9 @@ class Frame:
     # A theme-wide multiplier on every feature size, so a theme can read as
     # bold or as fine without each pattern needing a setting of its own.
     scale: float = 1.0
+    # How strongly shapes are shaded and shadowed. Flat fills read as generated;
+    # a theme can still ask for them.
+    depth: float = 1.0
 
     @property
     def aspect(self) -> float:

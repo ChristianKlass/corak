@@ -138,6 +138,22 @@ through the midpoint. Where a requested colour falls outside sRGB its chroma is
 reduced until it fits, rather than each channel being clipped independently —
 clipping shifts the hue, which is the thing a perceptual space is there to avoid.
 
+## Depth
+
+Flat fills are what make a generated wallpaper look generated. Three things
+change that, and none of them is expensive — they are all QPainter brushes:
+
+- a **large-scale gradient** under everything, giving the image somewhere to be
+  bright and somewhere to be dark, which no amount of per-cell variation supplies
+- a **gradient across each shape**, lit from one direction shared by the whole
+  image, since shapes lit from different angles read as a collage
+- a **soft shadow**, built from three offset translucent copies rather than a
+  blur: a real gaussian over a 4K frame costs seconds, and at this scale the
+  copies read the same
+
+Shapes can also have their corners rounded. Themes carry a `depth` from 0 to 1,
+so a theme can still ask for flat fills.
+
 ## Scale
 
 Patterns size their features in **millimetres**, taken from each display's

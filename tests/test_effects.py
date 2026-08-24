@@ -14,6 +14,8 @@ from PySide6.QtGui import QGuiApplication  # noqa: E402
 _app = QGuiApplication.instance() or QGuiApplication([])
 
 from corak import effects as fx  # noqa: E402
+from corak import shading  # noqa: E402
+from corak.frame import Frame  # noqa: E402
 from corak.engine import Engine  # noqa: E402
 from corak.palette import SCHEMES, Palette, blend, oklch, to_oklab  # noqa: E402
 
@@ -187,6 +189,63 @@ class TestPerceptualColour(unittest.TestCase):
         self.assertEqual(steps, sorted(steps))
         # Yellow is perceptually the lightest even though HSL calls it 0.5.
         self.assertEqual(palette.colors[-1].name(), "#ffff00")
+
+
+class TestShading(unittest.TestCase):
+    """Depth: gradients, shadows, rounded corners."""
+
+    def test_shift_moves_lightness_without_moving_hue(self) -> None:
+        from corak.palette import oklch, to_oklch
+
+        base = oklch(0.5, 0.1, 0.6)
+        lighter, darker = shading.shift(base, 0.1), shading.shift(base, -0.1)
+        self.assertAlmostEqual(to_oklch(lighter)[0], 0.6, places=2)
+        self.assertAlmostEqual(to_oklch(darker)[0], 0.4, places=2)
+        self.assertAlmostEqual(to_oklch(lighter)[2], to_oklch(base)[2], places=2)
+
+    def test_rounded_path_is_closed_and_inside_the_polygon(self) -> None:
+        from PySide6.QtCore import QPointF
+
+        square = [QPointF(0, 0), QPointF(100, 0), QPointF(100, 100), QPointF(0, 100)]
+        path = shading.rounded(square, 20)
+        bounds = path.boundingRect()
+        self.assertTrue(-0.5 <= bounds.left() and bounds.right() <= 100.5)
+        self.assertFalse(path.contains(QPointF(1, 1)))  # the corner is cut away
+        self.assertTrue(path.contains(QPointF(50, 50)))
+
+    def test_rounding_never_folds_a_shape_inward(self) -> None:
+        from PySide6.QtCore import QPointF
+
+        # A radius larger than the edge would otherwise carry adjacent corners
+        # past each other.
+        thin = [QPointF(0, 0), QPointF(10, 0), QPointF(10, 100), QPointF(0, 100)]
+        bounds = shading.rounded(thin, 500).boundingRect()
+        self.assertGreaterEqual(bounds.width(), 4.0)
+        self.assertGreaterEqual(bounds.height(), 40.0)
+
+    def test_zero_depth_leaves_the_background_flat(self) -> None:
+        from PySide6.QtGui import QImage, QPainter
+
+        from corak.palette import Palette
+
+        image = QImage(80, 50, QImage.Format.Format_RGB32)
+        painter = QPainter(image)
+        shading.underlay(painter, Frame(80, 50), Palette(4), random.Random(1), 0.0)
+        painter.end()
+        corners = {image.pixelColor(x, y).name() for x in (1, 78) for y in (1, 48)}
+        self.assertEqual(len(corners), 1)
+
+    def test_depth_gives_the_background_somewhere_bright(self) -> None:
+        from PySide6.QtGui import QImage, QPainter
+
+        from corak.palette import Palette
+
+        image = QImage(80, 50, QImage.Format.Format_RGB32)
+        painter = QPainter(image)
+        shading.underlay(painter, Frame(80, 50), Palette(4), random.Random(1), 1.0)
+        painter.end()
+        values = [image.pixelColor(x, y).valueF() for x in (1, 78) for y in (1, 48)]
+        self.assertGreater(max(values) - min(values), 0.01)
 
 
 if __name__ == "__main__":

@@ -116,6 +116,7 @@ class Engine:
                 height,
                 px_per_mm or Frame(width, height).px_per_mm,
                 theme.scale if theme is not None else 1.0,
+                theme.depth if theme is not None else 1.0,
             )
             draw(painter, frame, random.Random(design.pattern_seed), palette)
         finally:
