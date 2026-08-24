@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "corak"
-version = "0.1.0"
+version = "0.1.1"
 description = "Procedurally generated geometric wallpapers for Linux desktops"
 requires-python = ">=3.11"
 license = "MIT"

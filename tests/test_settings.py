@@ -93,6 +93,27 @@ class TestSettings(unittest.TestCase):
         self.assertEqual(loaded.active_theme(), derived)
         self.assertEqual(loaded.active_theme().derived_from, themes.BUILT_IN[0].id)
 
+    def test_a_theme_id_cannot_carry_a_path(self) -> None:
+        # The id becomes a filename, so a theme somebody sends you could
+        # otherwise write wherever the person installing it can write.
+        for bad in (
+            "../../../etc/passwd",
+            "/etc/passwd",
+            "sub/nested",
+            "..",
+            "with space",
+            "UPPER",
+            "-leading-hyphen",
+        ):
+            with self.subTest(id=bad):
+                found = themes.problems({"id": bad, "name": "X"})
+                self.assertTrue(any("id must be" in f for f in found), found)
+
+    def test_ordinary_theme_ids_are_accepted(self) -> None:
+        for good in ("nord", "tokyo-night", "my_theme", "abyss2"):
+            with self.subTest(id=good):
+                self.assertEqual(themes.problems({"id": good, "name": "X"}), [])
+
     def test_a_corrupt_custom_theme_is_skipped_not_fatal(self) -> None:
         settings = Settings(custom_themes=[{"id": "bad", "name": "B", "chroma": "nonsense"}])
         self.assertEqual(settings.themes(), [])

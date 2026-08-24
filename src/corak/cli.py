@@ -176,6 +176,11 @@ def _add_theme(source: str) -> int:
     for document in documents:
         theme = Theme.from_dict(document)
         path = directory / f"{theme.id}.json"
+        # Checked again here rather than trusting the validation above: this is
+        # the line that writes, and it is the one that has to be right.
+        if path.resolve().parent != directory.resolve():
+            print(f"corak: refusing to write outside {directory}", file=sys.stderr)
+            return 1
         path.write_text(json.dumps(document, indent=2) + "\n")
         print(f"installed {theme.name} -> {path}")
     return 0

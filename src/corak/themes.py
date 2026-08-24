@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field, replace
 from importlib import resources
@@ -24,6 +25,9 @@ from PySide6.QtGui import QColor
 from .palette import SCHEMES
 
 DEFAULT_ID = "nightfall"
+
+# A theme id is used as a filename, so it may not contain a path.
+SAFE_ID = re.compile(r"[a-z0-9][a-z0-9_-]*")
 
 
 @dataclass(frozen=True)
@@ -204,8 +208,16 @@ def problems(data: dict) -> list[str]:
     in full instead of one complaint at a time.
     """
     found = []
-    if not str(data.get("id", "")).strip():
+    identifier = str(data.get("id", "")).strip()
+    if not identifier:
         found.append("needs an id")
+    elif not SAFE_ID.fullmatch(identifier):
+        # The id becomes a filename. Left unchecked, "../../x" or "/etc/x"
+        # writes wherever the person running this can write, which turns
+        # installing a theme somebody sent you into arbitrary file creation.
+        found.append(
+            "id must be lowercase letters, digits, hyphens or underscores"
+        )
     if not str(data.get("name", "")).strip():
         found.append("needs a name")
 
