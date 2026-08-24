@@ -20,6 +20,18 @@ ORDER = ("calm", "darken", "vignette", "grain")
 DEFAULT_STRENGTH = 0.6
 GRAIN_TILE = 512
 
+# Noise is incompressible, so a grained PNG is roughly twenty times the size of
+# a flat one -- measured at 3440x1440, 0.3 MB becomes 7.7 MB. Worth knowing
+# before it is switched on for every screen on a timer.
+COSTLY = {
+    "grain": "noise does not compress: PNGs grow roughly 20x (0.3 MB -> 7.7 MB at 3440x1440)",
+}
+
+
+def warning(name: str) -> str | None:
+    """A caveat worth showing the user before an effect is enabled."""
+    return COSTLY.get(name)
+
 
 class UnknownEffect(ValueError):
     pass

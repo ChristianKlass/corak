@@ -8,7 +8,7 @@ library on disk.
 
 ## Status
 
-Step 2 of 4: colour schemes and the effects layer.
+Step 3 of 4: setting the desktop background.
 
 ## Running
 
@@ -30,6 +30,7 @@ python3 -m venv .venv
 | D | Toggle *darken* |
 | V | Toggle *vignette* |
 | G | Toggle *grain* |
+| Enter | Set as wallpaper |
 | Esc / Q | Quit |
 
 ## Design
@@ -57,7 +58,7 @@ a test card. `Palette.from_hex` accepts explicit colours instead.
 | `calm` | Desaturates and squeezes the tonal range toward the low end |
 | `darken` | Scales brightness down without crushing the blacks |
 | `vignette` | Darkens toward the edges, shaped to the frame's aspect |
-| `grain` | Overlays fine monochrome noise |
+| `grain` | Overlays fine monochrome noise — **expensive**, see below |
 
 `calm` is the quiet mode. What makes a wallpaper distracting is local contrast
 between neighbouring shapes rather than overall brightness, so dimming alone
@@ -69,8 +70,38 @@ result never depends on how they were typed. Each is a whole-image composition �
 at 3440x1440 a Python pixel loop over five million pixels would dominate the
 render, while the full stack costs about 80 ms.
 
+`grain` is off by default and worth thinking about before switching on. Noise is
+incompressible, so a grained PNG is roughly twenty times the size of a flat one
+— 0.3 MB becomes 7.7 MB at 3440x1440, and a rotation writing one image per
+screen turns that into tens of megabytes. Enabling it prints the caveat.
+
 Effects are a render setting rather than part of a `Design`, so changing them
 does not invalidate history.
+
+## Desktops
+
+| Shell | Mechanism | Per screen |
+| --- | --- | --- |
+| KDE Plasma | a script over D-Bus to `org.kde.PlasmaShell` | yes |
+| GNOME | `gsettings`, both the light and dark keys | no |
+| Xfce | one `xfconf` property per monitor | yes |
+
+Plasma is the only one that can address screens individually without a fight:
+`plasma-apply-wallpaperimage` sets a single image everywhere, so per-screen
+wallpapers go through the shell's scripting interface and match containments to
+screens by logical position. If that fails it falls back to the single-image
+command rather than leaving the wallpaper untouched.
+
+Images are rendered at each screen's true panel resolution, so a portrait
+monitor gets a portrait image rather than a cropped slice of a widescreen one.
+Qt alone is not enough to know that resolution: under Wayland it learns only an
+integer buffer scale, so a 1.5x output is reported as 2x and a 3840x1100 panel
+looks like 5120x1466. Where KScreen is present its numbers are used instead.
+
+Wallpapers are written to `$XDG_DATA_HOME/corak/wallpapers` rather than a
+temporary directory — desktop shells store the path and re-read it at every
+login, so an image that vanishes takes the wallpaper with it. Old ones are
+pruned after the new one is in place.
 
 ## Tests
 
