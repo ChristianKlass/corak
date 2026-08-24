@@ -23,6 +23,9 @@ def run(argv: list[str] | None = None) -> int:
     app.setApplicationName("corak")
     app.setApplicationDisplayName("corak")
 
+    from .ui.style import scheme, stylesheet
+
+    app.setStyleSheet(stylesheet(scheme()))
     settings = load()
     store = Store()
     engine = Engine(settings.patterns, settings.themes())

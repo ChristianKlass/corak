@@ -38,6 +38,9 @@ select = [
 ignore = [
     "E501",  # line length is the formatter's business, not the linter's
 ]
+# Typographic characters in text the user reads, deliberately not their ASCII
+# lookalikes.
+allowed-confusables = ["\u00d7", "\u2014", "\u00b7", "\u2026", "\u2191", "\u2193", "\u2190", "\u2192"]
 
 [tool.ruff.lint.per-file-ignores]
 # Qt needs an application object before any of this can be imported, so the

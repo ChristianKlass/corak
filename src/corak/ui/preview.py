@@ -11,7 +11,12 @@ class PreviewWidget(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._image: QImage | None = None
+        self._ground = QColor(24, 24, 26)
         self.setMinimumSize(320, 200)
+
+    def set_ground(self, colour: str) -> None:
+        self._ground = QColor(colour)
+        self.update()
 
     def set_image(self, image: QImage) -> None:
         self._image = image
@@ -19,7 +24,7 @@ class PreviewWidget(QWidget):
 
     def paintEvent(self, event: QPaintEvent) -> None:
         painter = QPainter(self)
-        painter.fillRect(self.rect(), QColor(24, 24, 26))
+        painter.fillRect(self.rect(), self._ground)
         if self._image is None or self._image.isNull():
             return
         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)

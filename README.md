@@ -161,6 +161,28 @@ Large, well-separated shapes can carry real hue differences. It was small
 adjacent cells that turned a multi-hue scheme into confetti, so `scatter` allows
 a much wider hue spread than the tiling patterns do.
 
+## The window
+
+The wallpaper takes the whole upper surface and the chrome sits under it as one
+quiet bar, because the generated image is the point and the interface around it
+is a frame for someone else's picture.
+
+Two things that used to be invisible are now stated. The arrow keys are drawn as
+a cross laid out the way the keys physically are, since nothing else hinted that
+the interaction existed. And the design's identity — theme, pattern, and the two
+seeds — is four labelled fields rather than one run of text, with a button to
+copy it, because it can be typed back into `corak --design` to recover a
+wallpaper.
+
+Settings apply as they are made. A preview redraw costs under thirty
+milliseconds, so there is nothing to wait for and no reason to ask anyone to
+confirm; the dialog has one button and it closes the window. Only the rotation
+settings reach `systemctl`, since everything else runs on every slider tick.
+
+Styling is QSS, which is a subset of CSS: fills, borders, radii, padding, fonts
+and widget gradients. No shadows, transforms or animation. The scheme follows
+the desktop's own light or dark setting.
+
 ## Previewing
 
 The window renders smaller than the screen, so it scales the pixel density down
