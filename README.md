@@ -10,12 +10,21 @@ a seed. Nothing is downloaded, and there is no image library on disk.
 ## Install
 
 ```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install -e .
-.venv/bin/corak --install-desktop   # adds it to the application menu
+pipx install corak
+corak --install-desktop   # adds it to the application menu
 ```
 
-PySide6 pulls in its own Qt, so nothing else is needed.
+PySide6 brings its own Qt, so there is nothing else to install.
+
+From source:
+
+```bash
+git clone https://github.com/ChristianKlass/corak && cd corak
+python3 -m venv .venv
+.venv/bin/python -m pip install -e ".[dev]"
+QT_QPA_PLATFORM=offscreen .venv/bin/python -m unittest discover -s tests
+.venv/bin/ruff check src tests
+```
 
 ## Keys
 
