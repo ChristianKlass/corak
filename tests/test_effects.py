@@ -23,7 +23,15 @@ from corak import effects as fx  # noqa: E402
 from corak import shading  # noqa: E402
 from corak.frame import Frame  # noqa: E402
 from corak.engine import Engine  # noqa: E402
-from corak.palette import SCHEMES, Palette, blend, oklch, to_oklab  # noqa: E402
+from corak.palette import (  # noqa: E402
+    SCHEMES,
+    Palette,
+    blend,
+    blend_direct,
+    oklch,
+    to_oklab,
+    to_oklch,
+)
 
 SIZE = (240, 140)
 
@@ -188,6 +196,24 @@ class TestPerceptualColour(unittest.TestCase):
         first, second = oklch(0.6, 0.13, 0.05), oklch(0.6, 0.13, 0.4)
         midpoint = blend(first, second, 0.5)
         self.assertGreater(chroma(midpoint), min(chroma(first), chroma(second)) * 0.75)
+
+    def test_direct_blending_invents_no_third_hue(self) -> None:
+        # Blue to rust the polar way passes through green, which is wrong for a
+        # palette somebody chose; the direct route stays between them.
+        from PySide6.QtGui import QColor
+
+        blue, rust = QColor("#2f6d84"), QColor("#b5622f")
+        midpoint = blend_direct(blue, rust, 0.5)
+        _, chroma, hue = to_oklch(midpoint)
+        greenish = 0.25 <= hue <= 0.45 and chroma > 0.02
+        self.assertFalse(greenish, f"midpoint hue {hue:.3f} at chroma {chroma:.3f}")
+
+    def test_direct_blending_still_reaches_both_ends(self) -> None:
+        from PySide6.QtGui import QColor
+
+        blue, rust = QColor("#2f6d84"), QColor("#b5622f")
+        self.assertEqual(blend_direct(blue, rust, 0.0).name(), blue.name())
+        self.assertEqual(blend_direct(blue, rust, 1.0).name(), rust.name())
 
     def test_from_hex_orders_by_perceptual_lightness(self) -> None:
         palette = Palette.from_hex(["#ffff00", "#0000ff", "#808080"])
