@@ -1,0 +1,14 @@
+version: 2
+updates:
+  # PySide6 carries all of Qt, so a Qt advisory reaches this project through it.
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # Actions are pinned by major version and go stale quietly.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
