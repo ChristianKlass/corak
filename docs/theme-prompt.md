@@ -40,8 +40,12 @@ The rest:
   one or two of the eight can be mid-toned.
 - "calm" compresses the tonal range. 0.2 to 0.4 is plenty. Leave it off a theme
   that is already quiet.
-- Vary the eight: one nearly monochrome with a single accent, a couple with
-  three or four genuinely different hues, one warm, one cold.
+- Vary the eight and count as you go. At most three may be warm-dominant
+  (browns, reds, ambers) -- an existing set came out five of six warm and the
+  whole thing reads as brown. Include at least two that are unmistakably cold
+  and one built on green.
+- Mean perceptual lightness across a theme's colours should land between 0.35
+  and 0.55. Below that everything disappears into the ground.
 - Do not use "grain" on more than one theme; it makes files 20x larger.
 
 Think film stills and album covers rather than colour-picker gradients.

@@ -30,16 +30,16 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     spread = colour_rng.choice((0.3, 0.6, 1.0))
     light = rng.uniform(0, math.tau)
 
-    count = rng.randint(3, 7)
+    count = rng.randint(5, 11)
     # Deliberately large -- comparable to the frame. These are meant to run off
     # the edges rather than sit inside it.
-    largest = min(w, h) * rng.uniform(0.55, 1.1)
+    largest = min(w, h) * rng.uniform(0.30, 0.55)
 
     shapes = []
     for i in range(count):
         cx = rng.uniform(-0.15, 1.15) * w
         cy = rng.uniform(-0.15, 1.15) * h
-        radius = largest * rng.uniform(0.45, 1.0)
+        radius = largest * rng.uniform(0.35, 1.0)
         lobes = rng.randint(5, 9)
         wobble = rng.uniform(0.18, 0.5)
         start = rng.uniform(0, math.tau)
@@ -54,7 +54,7 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
         hue_t += colour_rng.uniform(-spread, spread)
         shapes.append((smooth_loop(points, rng.uniform(0.4, 0.75)), pal.pick(hue_t), radius, cx, cy))
 
-    stroke_width = max(1.5, frame.mm(rng.uniform(0.8, 2.2)))
+    stroke_width = max(1.0, frame.mm(rng.uniform(0.3, 0.9)))
     for path, color, radius, cx, cy in shapes:
         cast_shadows(
             painter, frame, [(path, radius * 0.05)], light, depth * 0.8,
@@ -66,5 +66,5 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
         painter.setBrush(fill)
         # A lighter version of the shape's own colour, not white: the edge is
         # the shape catching the light, not a line drawn around it.
-        painter.setPen(QPen(shift(color, 0.26), stroke_width))
+        painter.setPen(QPen(shift(color, 0.18), stroke_width))
         painter.drawPath(path)

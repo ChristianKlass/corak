@@ -70,6 +70,8 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     spread = colour_rng.choice((0.2, 0.45, 0.7, 1.0))
     # Enough to push the far shapes back, not enough to erase them.
     haze = colour_rng.uniform(0.18, 0.42) * depth
+    # A minority, deliberately: an accent that appears everywhere is not one.
+    accent_odds = colour_rng.choice((0.0, 0.08, 0.15, 0.25))
 
     # How much of the frame the shapes may cover between them. Counting the
     # area as it is spent is the only reliable way to tell crowded from sparse:
@@ -117,7 +119,8 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
         if not band:
             continue
         if divisor == 1 or depth <= 0.0:
-            _paint(painter, band, frame, pal, rng, colour_rng, light, spread, haze, hue_field, stroke, depth)
+            _paint(painter, band, frame, pal, rng, colour_rng, light, spread, haze,
+                   hue_field, stroke, depth, accent_odds)
             continue
 
         # Painted small and enlarged: the softening is the point.
@@ -127,14 +130,16 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
         try:
             into.setRenderHint(QPainter.RenderHint.Antialiasing, True)
             into.scale(1.0 / divisor, 1.0 / divisor)
-            _paint(into, band, frame, pal, rng, colour_rng, light, spread, haze, hue_field, stroke, depth)
+            _paint(into, band, frame, pal, rng, colour_rng, light, spread, haze,
+                   hue_field, stroke, depth, accent_odds)
         finally:
             into.end()
         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
         painter.drawImage(QRect(0, 0, w, h), layer)
 
 
-def _paint(painter, band, frame, pal, rng, colour_rng, light, spread, haze, hue_field, stroke, depth) -> None:
+def _paint(painter, band, frame, pal, rng, colour_rng, light, spread, haze,
+           hue_field, stroke, depth, accent_odds) -> None:
     w, h = frame.width, frame.height
 
     # Geometry first, so the whole band's shadows can be cast in one pass onto
@@ -162,7 +167,7 @@ def _paint(painter, band, frame, pal, rng, colour_rng, light, spread, haze, hue_
         # related; the jitter stops the image separating into bands of one
         # colour each.
         hue_t = hue_field(x / w, y / h) + colour_rng.uniform(-spread, spread)
-        color = pal.pick(hue_t)
+        color = pal.accent() if colour_rng.random() < accent_odds else pal.pick(hue_t)
         # Depth still moves it, but only in lightness -- the hue is the one the
         # palette gave.
         color = shift(color, (z - 0.5) * 0.16)

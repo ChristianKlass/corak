@@ -41,6 +41,7 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     # Translucent enough that overlaps mix rather than occlude, which is where
     # the colours in the middle of a cluster come from.
     alpha = colour_rng.uniform(0.32, 0.62)
+    accent_odds = colour_rng.choice((0.05, 0.12, 0.22))
 
     discs = []
     for _ in range(count):
@@ -57,7 +58,7 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
         if not band:
             continue
         if divisor <= 1 or depth <= 0.0:
-            _discs(painter, band, frame, pal, rng, colour_rng, hue_field, spread, alpha)
+            _discs(painter, band, frame, pal, rng, colour_rng, hue_field, spread, alpha, accent_odds)
             continue
         layer = QImage(
             max(1, w // divisor), max(1, h // divisor), QImage.Format.Format_ARGB32_Premultiplied
@@ -67,7 +68,7 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
         try:
             into.setRenderHint(QPainter.RenderHint.Antialiasing, True)
             into.scale(1.0 / divisor, 1.0 / divisor)
-            _discs(into, band, frame, pal, rng, colour_rng, hue_field, spread, alpha)
+            _discs(into, band, frame, pal, rng, colour_rng, hue_field, spread, alpha, accent_odds)
         finally:
             into.end()
         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
@@ -76,13 +77,13 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     _rings(painter, frame, pal, rng, colour_rng, depth)
 
 
-def _discs(painter, band, frame, pal, rng, colour_rng, hue_field, spread, alpha) -> None:
+def _discs(painter, band, frame, pal, rng, colour_rng, hue_field, spread, alpha, accent_odds=0.0) -> None:
     w, h = frame.width, frame.height
     painter.setPen(Qt.PenStyle.NoPen)
     for z, x, y, radius in band:
         hue_t = hue_field(min(1.0, max(0.0, x / w)), min(1.0, max(0.0, y / h)))
         hue_t += colour_rng.uniform(-spread, spread)
-        color = QColor(pal.pick(hue_t))
+        color = QColor(pal.accent() if colour_rng.random() < accent_odds else pal.pick(hue_t))
         # Nearer discs are brighter as well as larger; the far ones sink into
         # the ground.
         color = shift(color, (z - 0.45) * 0.20)

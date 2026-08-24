@@ -409,6 +409,17 @@ class Palette:
         span = self._t0 + (self._t1 - self._t0) * _clamp(hue_t)
         return oklch(lo + (hi - lo) * _clamp(light_t), self.chroma * chroma, self.hue_at(span))
 
+    def accent(self) -> QColor:
+        """The palette's most saturated colour.
+
+        A set like four deep blues and one coral is built around the coral, but
+        sampling the set evenly turns it up in a fifth of the shapes and buries
+        it. Patterns ask for it directly instead.
+        """
+        if not self.colors:
+            return QColor(0, 0, 0)
+        return max(self.colors, key=lambda c: to_oklch(c)[1])
+
     def pick(self, t: float, rng: random.Random | None = None) -> QColor:
         """One of the palette's colours, chosen whole.
 

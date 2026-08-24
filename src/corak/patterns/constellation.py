@@ -64,7 +64,7 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
             painter.drawLine(point, nodes[j][0])
 
     painter.setPen(Qt.PenStyle.NoPen)
-    glow_reach = rng.uniform(3.5, 7.0)
+    glow_reach = rng.uniform(2.2, 4.5)
     for point, color in nodes:
         size = node_size * rng.uniform(0.6, 1.6)
 
@@ -81,7 +81,7 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
         halo = QRadialGradient(point, reach)
         # A slow falloff. Collapsing to nothing within a third of the radius
         # leaves a dot with a rim rather than a light with a halo.
-        for stop, strength in ((0.0, 0.75), (0.10, 0.40), (0.30, 0.15), (0.60, 0.05), (1.0, 0.0)):
+        for stop, strength in ((0.0, 0.62), (0.10, 0.30), (0.30, 0.10), (0.60, 0.03), (1.0, 0.0)):
             halo.setColorAt(
                 stop,
                 QColor(
