@@ -7,6 +7,7 @@ import math
 from PySide6.QtCore import QPointF
 from PySide6.QtGui import QPainter, QPen, QPolygonF
 
+from ..frame import Frame
 from ..noise import field
 from .base import pattern
 
@@ -21,17 +22,17 @@ def _hexagon(cx: float, cy: float, r: float) -> QPolygonF:
 
 
 @pattern("hexagons")
-def draw(painter: QPainter, w: int, h: int, rng, pal) -> None:
-    across = rng.randint(14, 34)
-    r = w / (across * 1.5)
+def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
+    w, h = frame.width, frame.height
+    r = frame.mm(rng.uniform(9.0, 26.0))
     dx = r * 1.5
     dy = r * math.sqrt(3.0)
     f = field(rng)
 
     # A visible gap is a deliberate look; below that threshold the tiles are
-    # meant to touch, and each one is stroked in its own colour so antialiasing
+    # meant to touch, and each is stroked in its own colour so antialiasing
     # cannot leave a hairline of background along the shared edges.
-    gap = rng.uniform(0.0, 0.06)
+    gap = rng.uniform(0.0, 0.045)
     seamless = gap <= 0.02
 
     # One extra ring past each edge so no partial tile is missing at the border.

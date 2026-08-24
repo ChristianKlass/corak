@@ -14,6 +14,7 @@ from PySide6.QtGui import QImage, QPainter
 
 from . import effects as fx
 from .design import Design
+from .frame import Frame
 from .palette import Palette
 from .patterns import REGISTRY, names
 
@@ -61,6 +62,7 @@ class Engine:
         width: int,
         height: int,
         effects: Mapping[str, float] | None = None,
+        px_per_mm: float | None = None,
     ) -> QImage:
         try:
             draw = REGISTRY[design.pattern]
@@ -77,7 +79,8 @@ class Engine:
         painter = QPainter(image)
         try:
             painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-            draw(painter, width, height, random.Random(design.pattern_seed), palette)
+            frame = Frame(width, height, px_per_mm) if px_per_mm else Frame(width, height)
+            draw(painter, frame, random.Random(design.pattern_seed), palette)
         finally:
             painter.end()
 

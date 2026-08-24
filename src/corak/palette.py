@@ -1,19 +1,22 @@
-"""Colour scheme generation.
+"""Colour scheme generation, in a perceptual space.
 
-Schemes are built from hue relationships on the colour wheel rather than picked
-at random, which is what keeps five colours looking like a set instead of five
-unrelated choices.
+Ramps are built in OKLab rather than HSL. HSL lightness is not perceptual --
+equal steps in it do not look like equal steps, yellows blow out while blues go
+muddy, and interpolating between two hues passes through a desaturated dip. In
+OKLab a lightness ramp reads as even and a blend between two colours stays as
+vivid as its ends.
 """
 
 from __future__ import annotations
 
-import colorsys
+import math
 import random
 from typing import Iterable, Sequence
 
 from PySide6.QtGui import QColor
 
 RAMP_STOPS = 5
+GAMUT_STEPS = 14
 
 # Hue offsets in turns, relative to the base hue. Weighted rather than uniform:
 # the tight schemes read as deliberate at wallpaper scale, while triads applied
@@ -38,17 +41,114 @@ def _clamp(value: float, low: float = 0.0, high: float = 1.0) -> float:
     return max(low, min(high, value))
 
 
-def hsl(h: float, s: float, ll: float) -> QColor:
-    r, g, b = colorsys.hls_to_rgb(h % 1.0, _clamp(ll), _clamp(s))
-    return QColor.fromRgbF(r, g, b)
+def _to_linear(channel: float) -> float:
+    return channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4
 
 
-def blend(a: QColor, b: QColor, t: float) -> QColor:
+def _from_linear(channel: float) -> float:
+    return channel * 12.92 if channel <= 0.0031308 else 1.055 * channel ** (1 / 2.4) - 0.055
+
+
+def oklab_to_rgb(ll: float, a: float, b: float) -> tuple[float, float, float]:
+    """OKLab to linear-light sRGB. Channels may fall outside 0..1."""
+    l_ = ll + 0.3963377774 * a + 0.2158037573 * b
+    m_ = ll - 0.1055613458 * a - 0.0638541728 * b
+    s_ = ll - 0.0894841775 * a - 1.2914855480 * b
+    l3, m3, s3 = l_ * l_ * l_, m_ * m_ * m_, s_ * s_ * s_
+    return (
+        4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3,
+        -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3,
+        -0.0041960863 * l3 - 0.7034186147 * m3 + 1.7076147010 * s3,
+    )
+
+
+def rgb_to_oklab(r: float, g: float, b: float) -> tuple[float, float, float]:
+    """Linear-light sRGB to OKLab."""
+    l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b
+    m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b
+    s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b
+    l_, m_, s_ = _cbrt(l), _cbrt(m), _cbrt(s)
+    return (
+        0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
+        1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
+        0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_,
+    )
+
+
+def _cbrt(value: float) -> float:
+    return math.copysign(abs(value) ** (1 / 3), value)
+
+
+def _in_gamut(rgb: tuple[float, float, float]) -> bool:
+    return all(-1e-4 <= c <= 1 + 1e-4 for c in rgb)
+
+
+def oklch(lightness: float, chroma: float, hue_turns: float) -> QColor:
+    """A colour from perceptual lightness, chroma and hue.
+
+    Chroma is reduced until the colour fits sRGB, rather than each channel being
+    clipped independently -- clipping shifts the hue, which is exactly what a
+    perceptual space is being used to avoid.
+    """
+    lightness = _clamp(lightness)
+    angle = (hue_turns % 1.0) * math.tau
+    cos_h, sin_h = math.cos(angle), math.sin(angle)
+
+    low, high = 0.0, max(0.0, chroma)
+    if _in_gamut(oklab_to_rgb(lightness, high * cos_h, high * sin_h)):
+        low = high
+    else:
+        for _ in range(GAMUT_STEPS):
+            middle = (low + high) / 2.0
+            if _in_gamut(oklab_to_rgb(lightness, middle * cos_h, middle * sin_h)):
+                low = middle
+            else:
+                high = middle
+
+    return _from_oklab(lightness, low * cos_h, low * sin_h)
+
+
+def to_oklab(color: QColor) -> tuple[float, float, float]:
+    return rgb_to_oklab(
+        _to_linear(color.redF()), _to_linear(color.greenF()), _to_linear(color.blueF())
+    )
+
+
+def to_oklch(color: QColor) -> tuple[float, float, float]:
+    """Perceptual lightness, chroma, and hue in turns."""
+    lightness, a, b = to_oklab(color)
+    return lightness, math.hypot(a, b), (math.atan2(b, a) / math.tau) % 1.0
+
+
+def blend(first: QColor, second: QColor, t: float) -> QColor:
+    """Interpolate perceptually, so the midpoint does not go grey.
+
+    Polar, along the shorter way round the hue circle. A straight line through
+    OKLab between two well-separated hues passes close to the neutral axis, so
+    the middle of a triad ramp would wash out to grey -- which is the muddiness
+    a perceptual space was supposed to fix.
+    """
     t = _clamp(t)
+    l1, c1, h1 = to_oklch(first)
+    l2, c2, h2 = to_oklch(second)
+
+    # A neutral colour has no meaningful hue, so it borrows the other's rather
+    # than dragging the blend halfway around the circle.
+    if c1 < 1e-4:
+        h1 = h2
+    elif c2 < 1e-4:
+        h2 = h1
+
+    delta = (h2 - h1 + 0.5) % 1.0 - 0.5
+    return oklch(l1 + (l2 - l1) * t, c1 + (c2 - c1) * t, h1 + delta * t)
+
+
+def _from_oklab(lightness: float, a: float, b: float) -> QColor:
+    red, green, blue = oklab_to_rgb(lightness, a, b)
     return QColor.fromRgbF(
-        a.redF() + (b.redF() - a.redF()) * t,
-        a.greenF() + (b.greenF() - a.greenF()) * t,
-        a.blueF() + (b.blueF() - a.blueF()) * t,
+        _clamp(_from_linear(_clamp(red))),
+        _clamp(_from_linear(_clamp(green))),
+        _clamp(_from_linear(_clamp(blue))),
     )
 
 
@@ -79,8 +179,8 @@ class Palette:
 
         self.base_hue = rng.random()
         offsets = SCHEMES[scheme]
-        saturation = rng.uniform(0.32, 0.74)
-        lo, hi = (0.26, 0.70) if self.dark else (0.40, 0.80)
+        self.chroma = rng.uniform(0.045, 0.16)
+        lo, hi = (0.32, 0.72) if self.dark else (0.55, 0.90)
 
         self.colors = []
         for i in range(RAMP_STOPS):
@@ -89,17 +189,17 @@ class Palette:
             # means the ramp moves through the scheme instead of jumping about.
             hue = self.base_hue + offsets[round(t * (len(offsets) - 1))]
             self.colors.append(
-                hsl(
-                    hue + rng.uniform(-0.012, 0.012),
-                    saturation * rng.uniform(0.82, 1.12),
+                oklch(
                     lo + (hi - lo) * t,
+                    self.chroma * rng.uniform(0.82, 1.14),
+                    hue + rng.uniform(-0.012, 0.012),
                 )
             )
 
-        self.background = hsl(
+        self.background = oklch(
+            rng.uniform(0.13, 0.21) if self.dark else rng.uniform(0.90, 0.96),
+            self.chroma * 0.45,
             self.base_hue + offsets[0],
-            saturation * 0.5,
-            rng.uniform(0.05, 0.11) if self.dark else rng.uniform(0.88, 0.95),
         )
 
         # Traversing the whole ramp in one image usually reads as muddy; most
@@ -120,15 +220,22 @@ class Palette:
         if not colors:
             raise ValueError("at least one colour is required")
 
-        colors.sort(key=lambda c: c.lightnessF())
+        # Sorted by perceptual lightness, so the ramp climbs the way the eye
+        # reads it rather than the way HSL happens to number it.
+        colors.sort(key=lambda c: to_oklab(c)[0])
         palette = cls.__new__(cls)
         palette.seed = -1
         palette.scheme = "custom"
-        palette.base_hue = colors[0].hueF() if colors[0].hueF() >= 0 else 0.0
+        palette.base_hue = max(colors[-1].hueF(), 0.0)
+        palette.chroma = 0.0
         palette.colors = colors
-        palette.dark = colors[len(colors) // 2].lightnessF() < 0.5 if dark is None else dark
-        palette.background = (
-            colors[0].darker(180) if palette.dark else colors[-1].lighter(140)
+        middle = to_oklab(colors[len(colors) // 2])[0]
+        palette.dark = middle < 0.5 if dark is None else dark
+        lightness, _, _ = to_oklab(colors[0] if palette.dark else colors[-1])
+        palette.background = oklch(
+            _clamp(lightness * 0.55) if palette.dark else _clamp(lightness * 1.06),
+            0.02,
+            palette.base_hue,
         )
         palette._t0, palette._t1 = 0.0, 1.0
         return palette

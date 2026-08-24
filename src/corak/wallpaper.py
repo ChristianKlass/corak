@@ -55,17 +55,21 @@ def save(image: QImage, design: Design, screen: Screen, directory: Path | None =
     return path
 
 
-def prune(keep: int, directory: Path | None = None) -> int:
-    """Delete all but the newest `keep` images. Returns how many went."""
+def prune(keep: int, directory: Path | None = None) -> list[str]:
+    """Delete all but the newest `keep` images. Returns the paths removed.
+
+    The caller needs the list: history rows point at these files, and without
+    it the database keeps growing entries for images that no longer exist.
+    """
     directory = directory or output_dir()
     if keep < 0 or not directory.is_dir():
-        return 0
+        return []
     images = sorted(directory.glob("*.png"), key=lambda p: p.stat().st_mtime, reverse=True)
-    removed = 0
+    removed = []
     for stale in images[keep:]:
         try:
             stale.unlink()
-            removed += 1
+            removed.append(str(stale))
         except OSError:
             pass
     return removed
@@ -253,7 +257,7 @@ def render_and_apply(
     design: Design,
     effects=None,
     screens: Sequence[Screen] | None = None,
-    keep: int = 12,
+    keep: int | None = None,
     backend: Backend | None = None,
 ) -> list[Target]:
     """Render the design at each screen's native size and set it as wallpaper.
@@ -274,11 +278,21 @@ def render_and_apply(
         screens = [next((s for s in screens if s.primary), screens[0])]
 
     targets = [
-        Target(screen, save(engine.render(design, screen.width, screen.height, effects), design, screen))
+        Target(
+            screen,
+            save(
+                # Millimetres, not a fraction of the width, so a design keeps its
+                # apparent scale across displays of differing density.
+                engine.render(design, screen.width, screen.height, effects, screen.px_per_mm),
+                design,
+                screen,
+            ),
+        )
         for screen in screens
     ]
     backend.apply(targets)
-    # Pruned after applying so the images still in use are the newest ones and
-    # cannot be deleted out from under the desktop.
-    prune(max(keep, len(targets)))
+    if keep is not None:
+        # Pruned after applying so the images still in use are the newest ones
+        # and cannot be deleted out from under the desktop.
+        prune(max(keep, len(targets)))
     return targets

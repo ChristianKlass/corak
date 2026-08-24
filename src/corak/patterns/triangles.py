@@ -2,17 +2,20 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QPointF, Qt
+from PySide6.QtCore import QPointF
 from PySide6.QtGui import QPainter, QPen, QPolygonF
 
+from ..frame import Frame
 from ..noise import field
 from .base import pattern
 
 
 @pattern("triangles")
-def draw(painter: QPainter, w: int, h: int, rng, pal) -> None:
-    cols = rng.randint(10, 22)
-    rows = max(3, round(cols * h / w))
+def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
+    w, h = frame.width, frame.height
+    cell = frame.mm(rng.uniform(18.0, 48.0))
+    cols = max(3, round(w / cell))
+    rows = max(3, round(h / cell))
     cw, ch = w / cols, h / rows
     f = field(rng)
 

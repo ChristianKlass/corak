@@ -15,7 +15,7 @@ _app = QGuiApplication.instance() or QGuiApplication([])
 
 from corak import effects as fx  # noqa: E402
 from corak.engine import Engine  # noqa: E402
-from corak.palette import SCHEMES, Palette  # noqa: E402
+from corak.palette import SCHEMES, Palette, blend, oklch, to_oklab  # noqa: E402
 
 SIZE = (240, 140)
 
@@ -146,6 +146,47 @@ class TestPalette(unittest.TestCase):
         palette = Palette(11)
         self.assertEqual(palette.ramp(-5.0).name(), palette.ramp(0.0).name())
         self.assertEqual(palette.ramp(5.0).name(), palette.ramp(1.0).name())
+
+
+class TestPerceptualColour(unittest.TestCase):
+    """Ramps are built in OKLab, not HSL."""
+
+    def test_oklch_round_trips(self) -> None:
+        for lightness, chroma, hue in [(0.3, 0.08, 0.1), (0.6, 0.12, 0.55), (0.85, 0.04, 0.9)]:
+            with self.subTest(l=lightness, c=chroma, h=hue):
+                back = to_oklab(oklch(lightness, chroma, hue))[0]
+                self.assertAlmostEqual(back, lightness, places=2)
+
+    def test_impossible_chroma_is_reduced_not_clipped(self) -> None:
+        # Clipping each channel would shift the hue, which is the whole reason
+        # for working in a perceptual space.
+        colour = oklch(0.5, 0.9, 0.7)
+        self.assertTrue(all(0.0 <= c <= 1.0 for c in (colour.redF(), colour.greenF(), colour.blueF())))
+        self.assertAlmostEqual(to_oklab(colour)[0], 0.5, places=2)
+
+    def test_ramp_lightness_climbs_evenly(self) -> None:
+        palette = Palette(21, dark=False)
+        steps = [to_oklab(c)[0] for c in palette.colors]
+        self.assertEqual(steps, sorted(steps))
+        gaps = [b - a for a, b in zip(steps, steps[1:])]
+        # Even to within a fifth of the mean step; HSL cannot promise this.
+        self.assertLess(max(gaps) - min(gaps), statistics.fmean(gaps) * 0.2)
+
+    def test_blending_two_hues_does_not_go_grey(self) -> None:
+        def chroma(colour):
+            _, a, b = to_oklab(colour)
+            return (a * a + b * b) ** 0.5
+
+        first, second = oklch(0.6, 0.13, 0.05), oklch(0.6, 0.13, 0.4)
+        midpoint = blend(first, second, 0.5)
+        self.assertGreater(chroma(midpoint), min(chroma(first), chroma(second)) * 0.75)
+
+    def test_from_hex_orders_by_perceptual_lightness(self) -> None:
+        palette = Palette.from_hex(["#ffff00", "#0000ff", "#808080"])
+        steps = [to_oklab(c)[0] for c in palette.colors]
+        self.assertEqual(steps, sorted(steps))
+        # Yellow is perceptually the lightest even though HSL calls it 0.5.
+        self.assertEqual(palette.colors[-1].name(), "#ffff00")
 
 
 if __name__ == "__main__":

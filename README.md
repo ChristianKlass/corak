@@ -90,6 +90,28 @@ analogous, complementary, split-complementary and triad. The tight schemes are
 weighted more heavily — a triad spread across a whole screen tends to look like
 a test card. `Palette.from_hex` accepts explicit colours instead.
 
+Ramps live in **OKLab**, not HSL. HSL lightness is not perceptual: equal steps
+in it do not look equal, yellows blow out while blues go muddy, and a straight
+interpolation between two hues dips toward grey in the middle. Blending is polar
+and takes the shorter way round the hue circle, so a triad ramp keeps its colour
+through the midpoint. Where a requested colour falls outside sRGB its chroma is
+reduced until it fits, rather than each channel being clipped independently —
+clipping shifts the hue, which is the thing a perceptual space is there to avoid.
+
+## Scale
+
+Patterns size their features in **millimetres**, taken from each display's
+reported physical size. Sizing as a fraction of the width instead makes one
+design render at wildly different apparent scales across a mixed set of
+monitors: measured on a 3440x1440 ultrawide, a 3840x1100 panel and a rotated
+1080x1920 one, hexagons came out 67, 75 and 21 pixels across. In millimetres
+they come out 65, 57 and 56.
+
+Some displays report a physical size that describes the panel rather than the
+mode in use, giving wildly different horizontal and vertical densities. Where
+the two disagree by more than a quarter the reported size is ignored and a
+nominal 96 dpi is assumed.
+
 ## Effects
 
 | Effect | What it does |

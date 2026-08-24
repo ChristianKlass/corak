@@ -74,11 +74,12 @@ class TestFiles(unittest.TestCase):
                 path = directory / f"{i}.png"
                 path.write_bytes(b"x")
                 os.utime(path, (i, i))
-            self.assertEqual(wp.prune(2, directory), 4)
+            removed = wp.prune(2, directory)
+            self.assertEqual(sorted(Path(p).name for p in removed), ["0.png", "1.png", "2.png", "3.png"])
             self.assertEqual(sorted(p.name for p in directory.glob("*.png")), ["4.png", "5.png"])
 
     def test_prune_ignores_a_missing_directory(self) -> None:
-        self.assertEqual(wp.prune(3, Path("/nonexistent/corak-test")), 0)
+        self.assertEqual(wp.prune(3, Path("/nonexistent/corak-test")), [])
 
 
 class TestPlasma(unittest.TestCase):

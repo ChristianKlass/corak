@@ -7,14 +7,17 @@ import math
 from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QPainter, QPolygonF
 
+from ..frame import Frame
 from .base import pattern
 
 
 @pattern("waves")
-def draw(painter: QPainter, w: int, h: int, rng, pal) -> None:
-    bands = rng.randint(5, 14)
+def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
+    w, h = frame.width, frame.height
+    band = frame.mm(rng.uniform(22.0, 70.0))
+    bands = max(3, round(h / band))
     steps = max(64, w // 12)
-    amp = h / bands * rng.uniform(0.35, 1.1)
+    amp = band * rng.uniform(0.35, 1.1)
     freq = rng.uniform(0.6, 2.2)
     drift = rng.uniform(-0.5, 0.5)
 
@@ -27,14 +30,13 @@ def draw(painter: QPainter, w: int, h: int, rng, pal) -> None:
         base = h * (i + 1) / (bands + 1)
         phase = rng.uniform(0, math.tau)
         local_amp = amp * (0.4 + 0.6 * (i / max(1, bands - 1)))
-        points = [QPointF(0.0, float(h)), QPointF(float(w), float(h))]
         curve = []
         for s in range(steps + 1):
             x = w * s / steps
             u = x / w
-            y = base + local_amp * math.sin(u * math.tau * freq + phase) * (
-                1.0 + drift * u
-            )
+            y = base + local_amp * math.sin(u * math.tau * freq + phase) * (1.0 + drift * u)
             curve.append(QPointF(x, y))
         painter.setBrush(pal.ramp((i + 1) / bands))
-        painter.drawPolygon(QPolygonF(curve + [QPointF(float(w), float(h)), QPointF(0.0, float(h))]))
+        painter.drawPolygon(
+            QPolygonF(curve + [QPointF(float(w), float(h)), QPointF(0.0, float(h))])
+        )

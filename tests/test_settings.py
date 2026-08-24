@@ -22,6 +22,9 @@ from corak.config import Settings, load, save  # noqa: E402
 from corak.engine import Engine  # noqa: E402
 from corak.patterns import names  # noqa: E402
 from corak.store import Store  # noqa: E402
+from corak import wallpaper as wp  # noqa: E402
+from corak.config import Settings as _S  # noqa: E402,F401
+from corak import rotation  # noqa: E402
 from corak.wallpaper import Target  # noqa: E402
 
 from test_wallpaper import screen  # noqa: E402
@@ -122,6 +125,34 @@ class TestStore(unittest.TestCase):
         self.store.record(self.design, "mono", {}, self._targets())
         self.store.forget(["/tmp/a.png"])
         self.assertEqual([e.path for e in self.store.recent(9)], ["/tmp/b.png"])
+
+
+class TestRotationHousekeeping(unittest.TestCase):
+    """Pruned images must take their history rows with them."""
+
+    def test_rotate_forgets_rows_for_images_it_deleted(self) -> None:
+        store = mock.Mock()
+        with mock.patch.object(rotation, "render_and_apply", return_value=[]), \
+             mock.patch.object(rotation, "prune", return_value=["/gone/a.png"]):
+            rotation.rotate(Settings(patterns=["waves"]), store=store)
+        store.forget.assert_called_once_with(["/gone/a.png"])
+
+    def test_nothing_is_forgotten_when_nothing_was_deleted(self) -> None:
+        store = mock.Mock()
+        with mock.patch.object(rotation, "render_and_apply", return_value=[]), \
+             mock.patch.object(rotation, "prune", return_value=[]):
+            rotation.rotate(Settings(patterns=["waves"]), store=store)
+        store.forget.assert_not_called()
+
+    def test_prune_never_deletes_the_images_just_applied(self) -> None:
+        # keep=1 with three screens must still leave all three in place.
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            for i in range(5):
+                (directory / f"{i}.png").write_bytes(b"x")
+                os.utime(directory / f"{i}.png", (i, i))
+            kept = len(list(directory.glob("*.png"))) - len(wp.prune(max(1, 3), directory))
+        self.assertEqual(kept, 3)
 
 
 class TestScheduler(unittest.TestCase):

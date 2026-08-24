@@ -1,8 +1,9 @@
 """Pattern registry.
 
-A pattern is a function that paints onto an already-cleared QPainter.  It gets
-the target size, its own seeded RNG, and a palette -- nothing else, so patterns
-stay independently testable.
+A pattern is a function that paints onto an already-cleared QPainter. It gets a
+Frame, its own seeded RNG, and a palette -- nothing else, so patterns stay
+independently testable. Feature sizes come from the frame in millimetres so the
+same design keeps its apparent scale across displays of different densities.
 """
 
 from __future__ import annotations
@@ -11,9 +12,10 @@ from typing import Callable, Dict
 
 from PySide6.QtGui import QPainter
 
+from ..frame import Frame
 from ..palette import Palette
 
-PatternFn = Callable[[QPainter, int, int, "object", Palette], None]
+PatternFn = Callable[[QPainter, Frame, "object", Palette], None]
 
 REGISTRY: Dict[str, PatternFn] = {}
 

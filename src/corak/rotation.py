@@ -10,7 +10,7 @@ from .design import Design
 from .engine import Engine
 from .palette import Palette
 from .store import Store
-from .wallpaper import Target, render_and_apply
+from .wallpaper import Target, prune, render_and_apply
 
 
 def rotate(
@@ -26,11 +26,19 @@ def rotate(
     if design is None:
         design = engine.new_design(rng or random.Random())
 
-    targets = render_and_apply(engine, design, settings.effects, keep=settings.keep)
+    targets = render_and_apply(engine, design, settings.effects)
 
     if store is not None:
-        scheme = Palette(design.palette_seed, dark=True if settings.effects.get("calm") else None).scheme
+        scheme = Palette(
+            design.palette_seed, dark=True if settings.effects.get("calm") else None
+        ).scheme
         store.record(design, scheme, settings.effects, targets)
+
+    # Pruned here rather than inside render_and_apply so the history rows for
+    # the deleted images go with them instead of accumulating forever.
+    removed = prune(max(settings.keep, len(targets)))
+    if store is not None and removed:
+        store.forget(removed)
     return design, targets
 
 
