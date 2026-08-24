@@ -109,6 +109,12 @@ is a prompt for getting a set out of a chat model; `--add-theme` reports
 everything wrong with a document rather than one fault at a time, since a
 generated file is worth checking in full.
 
+How far a shape may sit from the palette colour it was given is also the
+pattern's to set. A faceted pattern needs a lot of it: what makes a field of
+triangles read as faceted rather than as a smear is each one being a visibly
+different lightness from the ones beside it, which a smooth field alone will
+never give.
+
 How much the second input moves the position along a palette is the pattern's to
 say. Where it varies slowly, as depth does, it can carry weight; where it varies
 cell to cell it must not, or a palette of distinct hues turns neighbouring cells

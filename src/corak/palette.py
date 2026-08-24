@@ -370,6 +370,7 @@ class Palette:
         light_t: float,
         chroma: float = 1.0,
         from_light: float = 0.4,
+        relief: float = 0.10,
     ) -> QColor:
         """A colour with hue and lightness chosen independently.
 
@@ -394,7 +395,11 @@ class Palette:
             position = _clamp((1.0 - from_light) * _clamp(hue_t) + from_light * _clamp(light_t))
             base = self.ramp(position)
             lightness, c, hue = to_oklch(base)
-            return oklch(lightness + (_clamp(light_t) - 0.5) * 0.10, c * chroma, hue)
+            # `relief` is how far a shape may sit from the palette colour it was
+            # given. A faceted pattern needs a lot of it: what makes a field of
+            # triangles read as faceted rather than as mush is each one being a
+            # visibly different lightness from the ones beside it.
+            return oklch(lightness + (_clamp(light_t) - 0.5) * relief, c * chroma, hue)
         lo, hi = self._lightness
         # The same cohesion slice the ramp uses: most images look better over
         # part of the scheme than over all of it.

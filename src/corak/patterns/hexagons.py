@@ -46,6 +46,7 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     # cannot leave a hairline of background along the shared edges.
     # Thin: with shading doing the separating, a wide gap reads as heavy
     # leading between tiles rather than as depth.
+    facet = rng.uniform(0.12, 0.26)
     gap = rng.uniform(0.0, 0.018)
     seamless = gap <= 0.006
 
@@ -55,11 +56,11 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
             cx = col * dx
             cy = row * dy + (dy / 2.0 if col % 2 else 0.0)
             hue_t = hue_field(cx / w, cy / h)
-            light_t = light_field(cx / w, cy / h) + rng.uniform(-0.05, 0.05)
+            light_t = light_field(cx / w, cy / h) + rng.uniform(-facet, facet)
             # The lightness field varies cell to cell, so it shades a colour
             # rather than choosing one: letting it pick would scatter a
             # multi-hue palette across neighbouring cells as noise.
-            color = pal.shade(hue_t, light_t, from_light=0.12)
+            color = pal.shade(hue_t, light_t, from_light=0.12, relief=0.24)
             path = QPainterPath()
             path.addPolygon(QPolygonF(_corners(cx, cy, r)))
             path.closeSubpath()

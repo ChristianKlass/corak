@@ -24,6 +24,7 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     # Jitter keeps the grid from reading as graph paper, but a shared corner
     # must move as a single point or the triangles pull apart at the seams.
     jitter = rng.uniform(0.0, 0.28)
+    facet = rng.uniform(0.18, 0.34)
     corners = [
         [
             (
@@ -45,11 +46,14 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
                 cx = sum(p[0] for p in tri) / 3.0 / w
                 cy = sum(p[1] for p in tri) / 3.0 / h
                 hue_t = hue_field(cx, cy)
-                light_t = light_field(cx, cy) + rng.uniform(-0.04, 0.04)
+                # Deliberately large. A smooth field alone gives neighbouring
+                # facets almost the same lightness, which is the difference
+                # between a faceted surface and a smear.
+                light_t = light_field(cx, cy) + rng.uniform(-facet, facet)
                     # The lightness field varies cell to cell, so it shades a colour
                 # rather than choosing one: letting it pick would scatter a
                 # multi-hue palette across neighbouring cells as noise.
-                color = pal.shade(hue_t, light_t, from_light=0.12)
+                color = pal.shade(hue_t, light_t, from_light=0.12, relief=0.30)
                 painter.setBrush(color)
                 # Antialiased neighbours would otherwise show a hairline of
                 # background along every shared edge; stroking in the fill
