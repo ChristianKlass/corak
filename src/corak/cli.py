@@ -85,7 +85,12 @@ def _list_themes() -> int:
             origin = f"from {theme.derived_from}"
         else:
             origin = "built-in" if id(theme) in packaged else "installed"
-        print(f"{theme.id:<12} {theme.name:<16} {origin:<14} {theme.description}")
+        credit = (
+            f"  [{theme.source}{', ' + theme.license if theme.license else ''}]"
+            if theme.source
+            else ""
+        )
+        print(f"{theme.id:<12} {theme.name:<16} {origin:<14} {theme.description}{credit}")
     return 0
 
 

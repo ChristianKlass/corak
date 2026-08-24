@@ -49,6 +49,11 @@ class Theme:
     scale: float = 1.0
     # Gradient and shadow strength, 0 for flat fills.
     depth: float = 1.0
+    # Where a palette came from, when it was not made here, and under what
+    # terms. Colour values are not the licensable part -- the attribution is a
+    # courtesy to the people who chose them, and to anyone redistributing this.
+    source: str = ""
+    license: str = ""
     derived_from: str = ""
 
     @property
@@ -105,6 +110,8 @@ class Theme:
             },
             scale=float(data.get("scale", 1.0)),
             depth=float(data.get("depth", 1.0)),
+            source=str(data.get("source", "")),
+            license=str(data.get("license", "")),
             derived_from=str(data.get("derived_from", "")),
         )
 

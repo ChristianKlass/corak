@@ -318,6 +318,28 @@ temporary directory — desktop shells store the path and re-read it at every
 login, so an image that vanishes takes the wallpaper with it. Old ones are
 pruned after the new one is in place.
 
+## Attribution
+
+Several palettes are taken from established editor colour schemes. Colour values
+are not the licensable part of a scheme, but the people who chose them deserve
+the credit, and anyone redistributing this should know the terms:
+
+| Palette | From | Licence |
+| --- | --- | --- |
+| Nord | Arctic Ice Studio and Sven Greb | MIT |
+| Dracula | Zeno Rocha and contributors | MIT |
+| Catppuccin | Catppuccin | MIT |
+| Gruvbox | Pavel Pertsev | MIT/X11 |
+| Solarized | Ethan Schoonover | MIT |
+| Tokyo Night | enkia | MIT |
+| Voltage | after the classic Monokai scheme by Wimer Hazenberg | — |
+
+Voltage carries its own name rather than Monokai's. The 2006 palette is widely
+reproduced, but Monokai Pro is a commercial product today, and the name is not
+ours to take. The palette is what was wanted; the name was doing no work.
+
+Each theme carries `source` and `license` fields, shown by `corak --list-themes`.
+
 ## Tests
 
 ```sh
