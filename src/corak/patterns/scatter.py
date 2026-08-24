@@ -84,6 +84,15 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
         size = smallest + (largest - smallest) * (z ** bias) * rng.uniform(0.8, 1.2)
         shapes.append((z, x, y, size))
 
+    # Depth of field needs something in focus. Left to chance every shape can
+    # land in a far band, and the whole image comes out soft with nothing to
+    # rest on; stretching the distances up guarantees a foreground.
+    if shapes:
+        furthest = max(z for z, *_ in shapes)
+        if furthest < BANDS[-1][0] + 0.15 and furthest > 0.0:
+            stretch = (BANDS[-1][0] + 0.25) / furthest
+            shapes = [(min(1.0, z * stretch), x, y, size) for z, x, y, size in shapes]
+
     shapes.sort()
 
     for low, high, divisor in BANDS:

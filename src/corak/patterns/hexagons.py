@@ -23,7 +23,7 @@ def _corners(cx: float, cy: float, r: float) -> list[QPointF]:
 @pattern("hexagons")
 def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     w, h = frame.width, frame.height
-    r = frame.mm(rng.uniform(9.0, 26.0))
+    r = frame.mm(rng.uniform(14.0, 34.0))
     dx = r * 1.5
     dy = r * math.sqrt(3.0)
     # Two fields, deliberately at different scales. Hue drifts slowly across the
@@ -56,7 +56,10 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
             cy = row * dy + (dy / 2.0 if col % 2 else 0.0)
             hue_t = hue_field(cx / w, cy / h)
             light_t = light_field(cx / w, cy / h) + rng.uniform(-0.05, 0.05)
-            color = pal.shade(hue_t, light_t)
+            # The lightness field varies cell to cell, so it shades a colour
+            # rather than choosing one: letting it pick would scatter a
+            # multi-hue palette across neighbouring cells as noise.
+            color = pal.shade(hue_t, light_t, from_light=0.12)
             path = QPainterPath()
             path.addPolygon(QPolygonF(_corners(cx, cy, r)))
             path.closeSubpath()

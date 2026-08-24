@@ -13,7 +13,7 @@ from .base import pattern
 @pattern("triangles")
 def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     w, h = frame.width, frame.height
-    cell = frame.mm(rng.uniform(18.0, 48.0))
+    cell = frame.mm(rng.uniform(26.0, 60.0))
     cols = max(3, round(w / cell))
     rows = max(3, round(h / cell))
     cw, ch = w / cols, h / rows
@@ -46,7 +46,10 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
                 cy = sum(p[1] for p in tri) / 3.0 / h
                 hue_t = hue_field(cx, cy)
                 light_t = light_field(cx, cy) + rng.uniform(-0.04, 0.04)
-                color = pal.shade(hue_t, light_t)
+                    # The lightness field varies cell to cell, so it shades a colour
+                # rather than choosing one: letting it pick would scatter a
+                # multi-hue palette across neighbouring cells as noise.
+                color = pal.shade(hue_t, light_t, from_light=0.12)
                 painter.setBrush(color)
                 # Antialiased neighbours would otherwise show a hairline of
                 # background along every shared edge; stroking in the fill

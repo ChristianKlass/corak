@@ -364,7 +364,13 @@ class Palette:
         i = min(int(pos), len(offsets) - 2)
         return self.base_hue + offsets[i] + (offsets[i + 1] - offsets[i]) * (pos - i)
 
-    def shade(self, hue_t: float, light_t: float, chroma: float = 1.0) -> QColor:
+    def shade(
+        self,
+        hue_t: float,
+        light_t: float,
+        chroma: float = 1.0,
+        from_light: float = 0.4,
+    ) -> QColor:
         """A colour with hue and lightness chosen independently.
 
         Driving both from one value is what turns a multi-hue scheme into
@@ -380,10 +386,12 @@ class Palette:
             # instead would jump between palette entries shape to shape.
             # Position along a given palette follows both inputs. Taking hue
             # alone left a near shape no way to reach the pale end, so a
-            # scattered pattern sampled the middle of every palette and came
-            # out uniformly dark. Consecutive palette entries are neighbours,
-            # so letting the faster input move the position too costs nothing.
-            position = _clamp(0.6 * _clamp(hue_t) + 0.4 * _clamp(light_t))
+            # scattered pattern sampled the middle of every palette. How much
+            # the second input contributes is the caller's to say: where it
+            # varies slowly, as depth does, it can carry weight; where it
+            # varies cell to cell it must not, or a palette of distinct hues
+            # turns neighbouring cells into noise.
+            position = _clamp((1.0 - from_light) * _clamp(hue_t) + from_light * _clamp(light_t))
             base = self.ramp(position)
             lightness, c, hue = to_oklch(base)
             return oklch(lightness + (_clamp(light_t) - 0.5) * 0.10, c * chroma, hue)

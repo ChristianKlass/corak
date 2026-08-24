@@ -109,6 +109,11 @@ is a prompt for getting a set out of a chat model; `--add-theme` reports
 everything wrong with a document rather than one fault at a time, since a
 generated file is worth checking in full.
 
+How much the second input moves the position along a palette is the pattern's to
+say. Where it varies slowly, as depth does, it can carry weight; where it varies
+cell to cell it must not, or a palette of distinct hues turns neighbouring cells
+into noise.
+
 A theme's colours describe a region of colour space rather than five exact
 points. Rerolling the colours rotates the hue a little, shifts the lightness a
 little, and aims the chroma at an absolute target — usually near what the theme
