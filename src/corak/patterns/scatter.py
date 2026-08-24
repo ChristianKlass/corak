@@ -64,7 +64,7 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     stroke = colour_rng.random() < 0.45
     # Large, well-separated shapes can carry real hue differences -- it was
     # small adjacent cells that turned a multi-hue scheme into confetti.
-    spread = colour_rng.choice((0.05, 0.15, 0.45, 0.8))
+    spread = colour_rng.choice((0.2, 0.45, 0.7, 1.0))
     # Enough to push the far shapes back, not enough to erase them.
     haze = colour_rng.uniform(0.18, 0.42) * depth
 
@@ -91,7 +91,7 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
         if not band:
             continue
         if divisor == 1 or depth <= 0.0:
-            _paint(painter, band, frame, pal, rng, light, spread, haze, hue_field, stroke, depth)
+            _paint(painter, band, frame, pal, rng, colour_rng, light, spread, haze, hue_field, stroke, depth)
             continue
 
         # Painted small and enlarged: the softening is the point.
@@ -101,14 +101,14 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
         try:
             into.setRenderHint(QPainter.RenderHint.Antialiasing, True)
             into.scale(1.0 / divisor, 1.0 / divisor)
-            _paint(into, band, frame, pal, rng, light, spread, haze, hue_field, stroke, depth)
+            _paint(into, band, frame, pal, rng, colour_rng, light, spread, haze, hue_field, stroke, depth)
         finally:
             into.end()
         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
         painter.drawImage(QRect(0, 0, w, h), layer)
 
 
-def _paint(painter, band, frame, pal, rng, light, spread, haze, hue_field, stroke, depth) -> None:
+def _paint(painter, band, frame, pal, rng, colour_rng, light, spread, haze, hue_field, stroke, depth) -> None:
     w, h = frame.width, frame.height
 
     # Geometry first, so the whole band's shadows can be cast in one pass onto
@@ -130,8 +130,15 @@ def _paint(painter, band, frame, pal, rng, light, spread, haze, hue_field, strok
     )
 
     for z, x, y, size, path in placed:
-        hue_t = hue_field(x / w, y / h) + rng.uniform(-spread, spread)
-        color = pal.shade(hue_t, 0.18 + 0.78 * z + rng.uniform(-0.06, 0.06))
+        # A whole palette entry rather than a point along a ramp, so shapes can
+        # differ in hue and not only in brightness. The field keeps neighbours
+        # related; the jitter stops the image separating into bands of one
+        # colour each.
+        hue_t = hue_field(x / w, y / h) + colour_rng.uniform(-spread, spread)
+        color = pal.pick(hue_t)
+        # Depth still moves it, but only in lightness -- the hue is the one the
+        # palette gave.
+        color = shift(color, (z - 0.5) * 0.16)
         # Aerial perspective: distance pulls a shape toward the background, so
         # the far ones sit back instead of competing with the near ones.
         color = blend_direct(pal.background, color, 1.0 - haze * (1.0 - z))

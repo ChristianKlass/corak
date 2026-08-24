@@ -393,6 +393,19 @@ class Palette:
         span = self._t0 + (self._t1 - self._t0) * _clamp(hue_t)
         return oklch(lo + (hi - lo) * _clamp(light_t), self.chroma * chroma, self.hue_at(span))
 
+    def pick(self, t: float, rng: random.Random | None = None) -> QColor:
+        """One of the palette's colours, chosen whole.
+
+        Interpolating along a ramp can only ever give a shape a brightness --
+        every shape comes out the same hue. Taking an entry as written is what
+        lets one shape be teal and the next magenta, which is the difference
+        between a gradient and a colour scheme.
+        """
+        if not self.colors:
+            return QColor(0, 0, 0)
+        index = min(len(self.colors) - 1, max(0, int(_clamp(t) * len(self.colors))))
+        return self.colors[index]
+
     def ramp(self, t: float, full: bool = False) -> QColor:
         """Sample the ramp. t is 0..1; `full` ignores the cohesion slice."""
         t = _clamp(t)
