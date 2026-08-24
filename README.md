@@ -98,7 +98,6 @@ image a theme produces is different; they all look related.
 | **Ember** | Reds through amber, dark, with the edges falling away. |
 | **Tide** | Cool blues and teals, softly graded. |
 | **Linen** | Soft and muted. Lighter than the rest without lighting up the room. |
-| **Signal** | Loud. Full chroma, opposing hues, nothing held back. |
 
 Themes are chosen rather than built. Starting from nothing means answering a
 dozen questions before seeing anything, so the settings window adjusts a theme
@@ -129,6 +128,12 @@ Palettes are built from hue relationships rather than random picks: mono,
 analogous, complementary, split-complementary and triad. The tight schemes are
 weighted more heavily — a triad spread across a whole screen tends to look like
 a test card. `Palette.from_hex` accepts explicit colours instead.
+
+Hue and lightness are chosen independently, from spatial fields at different
+scales: hue drifts slowly across the whole image while lightness varies shape to
+shape. Driving both from one field is what turns a multi-hue scheme into
+confetti — a small spatial step crosses a hue boundary and neighbouring shapes
+jump from orange to blue.
 
 Ramps live in **OKLab**, not HSL. HSL lightness is not perceptual: equal steps
 in it do not look equal, yellows blow out while blues go muddy, and a straight

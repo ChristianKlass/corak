@@ -17,7 +17,9 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     cols = max(3, round(w / cell))
     rows = max(3, round(h / cell))
     cw, ch = w / cols, h / rows
-    f = field(rng)
+    # Hue drifts across the image; lightness varies cell to cell. See hexagons.
+    hue_field = field(rng, terms=2)
+    light_field = field(rng)
 
     # Jitter keeps the grid from reading as graph paper, but a shared corner
     # must move as a single point or the triangles pull apart at the seams.
@@ -42,8 +44,9 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
             for tri in halves:
                 cx = sum(p[0] for p in tri) / 3.0 / w
                 cy = sum(p[1] for p in tri) / 3.0 / h
-                t = f(cx * 6.0, cy * 6.0) + rng.uniform(-0.05, 0.05)
-                color = pal.ramp(t)
+                hue_t = hue_field(cx * 1.3, cy * 1.3)
+                light_t = light_field(cx * 5.0, cy * 5.0) + rng.uniform(-0.04, 0.04)
+                color = pal.shade(hue_t, light_t)
                 painter.setBrush(color)
                 # Antialiased neighbours would otherwise show a hairline of
                 # background along every shared edge; stroking in the fill

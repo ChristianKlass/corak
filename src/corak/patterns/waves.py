@@ -22,7 +22,8 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     drift = rng.uniform(-0.5, 0.5)
 
     painter.setPen(Qt.PenStyle.NoPen)
-    painter.fillRect(0, 0, w, h, pal.ramp(0.0))
+    hue_base = rng.random()
+    painter.fillRect(0, 0, w, h, pal.shade(hue_base, 0.0))
 
     # Painted back to front as filled regions down to the bottom edge, so the
     # bands overlap rather than leaving gaps where the curves diverge.
@@ -36,7 +37,9 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
             u = x / w
             y = base + local_amp * math.sin(u * math.tau * freq + phase) * (1.0 + drift * u)
             curve.append(QPointF(x, y))
-        painter.setBrush(pal.ramp((i + 1) / bands))
+        # Bands walk the lightness ramp while the hue barely moves, so a
+        # multi-hue scheme grades rather than striping in unrelated colours.
+        painter.setBrush(pal.shade(hue_base + 0.25 * (i / bands), (i + 1) / bands))
         painter.drawPolygon(
             QPolygonF(curve + [QPointF(float(w), float(h)), QPointF(0.0, float(h))])
         )

@@ -26,7 +26,12 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
     r = frame.mm(rng.uniform(9.0, 26.0))
     dx = r * 1.5
     dy = r * math.sqrt(3.0)
-    f = field(rng)
+    # Two fields, deliberately at different scales. Hue drifts slowly across the
+    # whole image while lightness varies shape to shape: driving both from one
+    # field makes a small spatial step cross a hue boundary, and neighbouring
+    # shapes jump from orange to blue.
+    hue_field = field(rng, terms=2)
+    light_field = field(rng)
     depth = frame.depth
 
     underlay(painter, frame, pal, rng, depth)
@@ -50,8 +55,9 @@ def draw(painter: QPainter, frame: Frame, rng, pal) -> None:
         for row in range(-1, int(h / dy) + 2):
             cx = col * dx
             cy = row * dy + (dy / 2.0 if col % 2 else 0.0)
-            t = f(cx / w * 6.0, cy / h * 6.0) + rng.uniform(-0.06, 0.06)
-            color = pal.ramp(t)
+            hue_t = hue_field(cx / w * 1.3, cy / h * 1.3)
+            light_t = light_field(cx / w * 5.0, cy / h * 5.0) + rng.uniform(-0.05, 0.05)
+            color = pal.shade(hue_t, light_t)
             path = rounded(_corners(cx, cy, r), corner)
 
             if lift > 0.0 and not seamless:

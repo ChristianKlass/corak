@@ -156,16 +156,6 @@ BUILT_IN: tuple[Theme, ...] = (
         effects={"calm": 0.2},
         scale=0.95,
     ),
-    Theme(
-        id="signal",
-        name="Signal",
-        description="Loud. Full chroma, opposing hues, nothing held back.",
-        schemes=("complement", "split", "triad"),
-        chroma=(0.13, 0.21),
-        dark=True,
-        effects={},
-        scale=0.8,
-    ),
 )
 
 BY_ID: dict[str, Theme] = {theme.id: theme for theme in BUILT_IN}

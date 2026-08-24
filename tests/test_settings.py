@@ -100,9 +100,9 @@ class TestSettings(unittest.TestCase):
         self.assertEqual(settings.active_theme().scale, 1.9)
 
     def test_choosing_a_built_in_does_not_store_a_copy(self) -> None:
-        settings = Settings().with_theme(themes.get("signal"))
+        settings = Settings().with_theme(themes.get("tide"))
         self.assertEqual(settings.custom_themes, [])
-        self.assertEqual(settings.theme, "signal")
+        self.assertEqual(settings.theme, "tide")
 
     def test_a_partial_write_cannot_replace_the_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

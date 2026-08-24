@@ -201,6 +201,10 @@ class Palette:
         # than inheriting a range chosen for dark ones.
         lo, hi = lightness_range or ((0.32, 0.72) if self.dark else (0.62, 0.93))
 
+        self._offsets = tuple(offsets)
+        self._lightness = (lo, hi)
+        self._generated = True
+
         self.colors = []
         for i in range(RAMP_STOPS):
             t = i / (RAMP_STOPS - 1)
@@ -274,7 +278,36 @@ class Palette:
             palette.base_hue,
         )
         palette._t0, palette._t1 = 0.0, 1.0
+        palette._generated = False
+        palette._offsets = (0.0,)
+        palette._lightness = (0.0, 1.0)
         return palette
+
+    def hue_at(self, t: float) -> float:
+        """The scheme's hue a fraction of the way along it."""
+        offsets = self._offsets
+        if len(offsets) == 1:
+            return self.base_hue + offsets[0]
+        pos = _clamp(t) * (len(offsets) - 1)
+        i = min(int(pos), len(offsets) - 2)
+        return self.base_hue + offsets[i] + (offsets[i + 1] - offsets[i]) * (pos - i)
+
+    def shade(self, hue_t: float, light_t: float, chroma: float = 1.0) -> QColor:
+        """A colour with hue and lightness chosen independently.
+
+        Driving both from one value is what turns a multi-hue scheme into
+        confetti: a small change in a spatial field then crosses a hue boundary,
+        so neighbouring shapes jump from orange to blue. Given separate inputs a
+        pattern can let hue drift slowly across the whole image while lightness
+        varies shape to shape, which is what reads as coherent.
+        """
+        if not getattr(self, "_generated", False):
+            return self.ramp(light_t)
+        lo, hi = self._lightness
+        # The same cohesion slice the ramp uses: most images look better over
+        # part of the scheme than over all of it.
+        span = self._t0 + (self._t1 - self._t0) * _clamp(hue_t)
+        return oklch(lo + (hi - lo) * _clamp(light_t), self.chroma * chroma, self.hue_at(span))
 
     def ramp(self, t: float, full: bool = False) -> QColor:
         """Sample the ramp. t is 0..1; `full` ignores the cohesion slice."""
