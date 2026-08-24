@@ -1,5 +1,7 @@
 # corak
 
+[![checks](https://github.com/ChristianKlass/corak/actions/workflows/checks.yml/badge.svg)](https://github.com/ChristianKlass/corak/actions/workflows/checks.yml)
+
 Procedurally generated geometric wallpapers for Linux. Every image is drawn from
 a seed. Nothing is downloaded, and there is no image library on disk.
 
