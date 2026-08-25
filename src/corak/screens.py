@@ -1,20 +1,30 @@
 """Physical display geometry.
 
-Two sources, because neither is sufficient alone. Qt works anywhere but under
+Three sources, because none is sufficient alone. Qt works anywhere but under
 Wayland learns only an integer buffer scale from the compositor, so a 1.5x
 output is reported as 2x and its panel looks larger than it is -- and under the
 offscreen platform plugin, which is how the headless rotation runs, it sees a
 single virtual screen and nothing real at all. KScreen knows the true modes and
-needs no display, so on KDE it is preferred and Qt is the fallback.
+needs no display, but it is a KDE tool and absent everywhere else.
+
+The kernel knows as well, and tells anyone who asks: every connector under
+/sys/class/drm carries its native mode and its EDID. That works with no
+compositor, no session bus and no desktop, so it covers the sessions KScreen
+does not. It cannot know about rotation, which is the compositor's business,
+so Qt supplies the orientation and the layout while the kernel supplies the
+pixels and the millimetres.
 """
 
 from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
-from dataclasses import dataclass
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, replace
+from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QGuiApplication
@@ -118,6 +128,143 @@ def parse_kscreen(payload: str) -> list[Screen]:
     return screens
 
 
+DRM_ROOT = Path("/sys/class/drm")
+
+# The kernel lists modes as "3840x1100", sometimes with an interlace suffix.
+MODE = re.compile(r"^(\d+)x(\d+)")
+
+
+@dataclass(frozen=True)
+class Panel:
+    """One connector as the kernel describes it, before any rotation."""
+
+    name: str
+    width: int
+    height: int
+    width_mm: int = 0
+    height_mm: int = 0
+
+
+def parse_edid(blob: bytes) -> tuple[int, int]:
+    """Physical size in millimetres from an EDID block, or zeros."""
+    if len(blob) < 128:
+        return 0, 0
+    # The first detailed timing descriptor carries millimetres. A zero pixel
+    # clock means the block is some other descriptor, and only the centimetre
+    # fields in the basic parameters are left, which round harder.
+    timing = blob[54:72]
+    if timing[0] or timing[1]:
+        width = timing[12] | ((timing[14] >> 4) << 8)
+        height = timing[13] | ((timing[14] & 0x0F) << 8)
+        if width and height:
+            return width, height
+    return blob[21] * 10, blob[22] * 10
+
+
+def read_drm(root: Path = DRM_ROOT) -> dict[str, Panel]:
+    """Native mode and physical size per connected connector."""
+    panels: dict[str, Panel] = {}
+    try:
+        entries = sorted(root.iterdir())
+    except OSError:
+        return panels
+
+    for entry in entries:
+        # Directories are named cardN-CONNECTOR, and the connector half is
+        # what every other source calls the screen.
+        name = entry.name.partition("-")[2]
+        if not name:
+            continue
+        try:
+            if entry.joinpath("status").read_text().strip() != "connected":
+                continue
+            # A connected but unused output is not part of the desktop.
+            enabled = entry.joinpath("enabled")
+            if enabled.exists() and enabled.read_text().strip() != "enabled":
+                continue
+            modes = entry.joinpath("modes").read_text().split()
+        except OSError:
+            continue
+
+        # The first mode is the preferred one, which is the panel's own
+        # resolution rather than whatever it happens to be driven at.
+        found = MODE.match(modes[0]) if modes else None
+        if found is None:
+            continue
+        try:
+            edid = entry.joinpath("edid").read_bytes()
+        except OSError:
+            edid = b""
+        width_mm, height_mm = parse_edid(edid)
+        panels[name] = Panel(
+            name=name,
+            width=int(found.group(1)),
+            height=int(found.group(2)),
+            width_mm=width_mm,
+            height_mm=height_mm,
+        )
+    return panels
+
+
+def merge_drm(panels: Mapping[str, Panel], laid_out: Sequence[Screen]) -> list[Screen]:
+    """Correct Qt's pixels and millimetres with the kernel's, keeping its layout."""
+    screens: list[Screen] = []
+    for screen in laid_out:
+        panel = panels.get(screen.name)
+        if panel is None:
+            screens.append(screen)
+            continue
+        width, height = panel.width, panel.height
+        width_mm, height_mm = panel.width_mm, panel.height_mm
+        # The kernel describes the panel and the compositor may have turned it.
+        # Qt knows the orientation in use, so a disagreement is a quarter turn
+        # and both the pixels and the millimetres follow it.
+        if screen.portrait != (height > width):
+            width, height = height, width
+            width_mm, height_mm = height_mm, width_mm
+        screens.append(
+            replace(screen, width=width, height=height, width_mm=width_mm, height_mm=height_mm)
+        )
+    return screens
+
+
+def _drm_only(panels: Mapping[str, Panel]) -> list[Screen]:
+    """Screens from the kernel alone, for a session Qt cannot see.
+
+    Rotation and placement are the compositor's to know, so this lays the
+    panels out left to right unrotated. It is the last thing short of guessing.
+    """
+    screens: list[Screen] = []
+    x = 0
+    for panel in panels.values():
+        screens.append(
+            Screen(
+                name=panel.name,
+                width=panel.width,
+                height=panel.height,
+                x=x,
+                y=0,
+                logical_width=panel.width,
+                logical_height=panel.height,
+                primary=not screens,
+                width_mm=panel.width_mm,
+                height_mm=panel.height_mm,
+            )
+        )
+        x += panel.width
+    return screens
+
+
+def _from_drm() -> list[Screen]:
+    panels = read_drm()
+    if not panels:
+        return []
+    laid_out = _from_qt()
+    if any(screen.name in panels for screen in laid_out):
+        return merge_drm(panels, laid_out)
+    return _drm_only(panels)
+
+
 def _from_kscreen() -> list[Screen]:
     if shutil.which("kscreen-doctor") is None:
         return []
@@ -167,7 +314,7 @@ def _from_qt() -> list[Screen]:
 
 
 def detect() -> list[Screen]:
-    screens = _from_kscreen() or _from_qt()
+    screens = _from_kscreen() or _from_drm() or _from_qt()
     if not screens:
         raise RuntimeError("no screens detected")
     if not any(s.primary for s in screens):
