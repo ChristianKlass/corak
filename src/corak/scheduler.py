@@ -57,10 +57,20 @@ def service_text() -> str:
         "Description=Generate and set a corak wallpaper\n"
         "After=graphical-session.target\n"
         "PartOf=graphical-session.target\n"
+        # A rotation that fires before the compositor is ready, or during an
+        # upgrade that briefly takes the executable away, was simply dropped.
+        # The limit is what stops a broken install retrying into the journal
+        # for as long as the session lasts.
+        "StartLimitIntervalSec=300\n"
+        "StartLimitBurst=3\n"
         "\n"
         "[Service]\n"
         "Type=oneshot\n"
         f"ExecStart={executable()} --next\n"
+        # Three tries, half a minute apart. An upgrade is away for under a
+        # minute, so the second or third lands after the binary is back.
+        "Restart=on-failure\n"
+        "RestartSec=30\n"
     )
 
 

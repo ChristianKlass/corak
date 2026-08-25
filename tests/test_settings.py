@@ -257,6 +257,24 @@ class TestScheduler(unittest.TestCase):
         with mock.patch.object(scheduler, "executable", return_value="/opt/corak"):
             self.assertIn("ExecStart=/opt/corak --next", scheduler.service_text())
 
+    def test_a_failed_rotation_is_retried(self) -> None:
+        # Dropped rotations were the old behaviour: oneshot with no Restart.
+        text = scheduler.service_text()
+        self.assertIn("Restart=on-failure", text)
+        self.assertIn("RestartSec=30", text)
+
+    def test_the_retries_are_capped(self) -> None:
+        # Without a limit a broken install retries for the whole session.
+        text = scheduler.service_text()
+        self.assertIn("StartLimitBurst=3", text)
+        self.assertIn("StartLimitIntervalSec=300", text)
+
+    def test_the_limit_window_is_shorter_than_the_shortest_interval(self) -> None:
+        # Once the burst is spent systemd refuses starts until the window
+        # passes, so it has to be clear again before the timer comes round.
+        self.assertIn("StartLimitIntervalSec=300", scheduler.service_text())
+        self.assertIn("OnUnitActiveSec=10min", scheduler.timer_text(10))
+
     def test_timer_uses_the_requested_interval(self) -> None:
         self.assertIn("OnUnitActiveSec=45min", scheduler.timer_text(45))
 
