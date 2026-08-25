@@ -2,6 +2,7 @@ name: release
 
 on:
   push:
+    branches: [main]
     tags: ["v*"]
 
 jobs:
@@ -19,8 +20,33 @@ jobs:
           name: dist
           path: dist/
 
-  publish:
+  # The rest of this file only ran when a tag was pushed, so a mistake in it
+  # surfaced halfway through a release. Every push to main now takes the same
+  # path to a throwaway index instead.
+  testpypi:
     needs: build
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          # The version only moves at a release, so most pushes carry one
+          # TestPyPI already holds.
+          skip-existing: true
+
+  publish:
+    # PyPI refuses a second upload of a version, so a broken build would burn
+    # the number it was cut for. TestPyPI goes first and holds the release back
+    # if it fails.
+    needs: [build, testpypi]
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     environment: pypi
     # Trusted publishing: PyPI verifies this workflow's identity directly, so
