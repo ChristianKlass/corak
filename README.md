@@ -16,6 +16,15 @@ corak --install-desktop   # adds it to the application menu
 
 PySide6 brings its own Qt, so there is nothing else to install.
 
+To upgrade:
+
+```bash
+pipx upgrade --pip-args="--no-cache-dir" corak
+```
+
+pipx caches wheels, and without that flag it will happily reinstall the version
+you already have.
+
 From source:
 
 ```bash
