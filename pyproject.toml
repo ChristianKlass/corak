@@ -21,7 +21,10 @@ classifiers = [
     "Topic :: Artistic Software",
     "Topic :: Desktop Environment",
 ]
-dependencies = ["PySide6>=6.7"]
+# Only QtCore, QtDBus, QtGui and QtWidgets are imported, and all four are
+# in Essentials. The full PySide6 metapackage also pulls Addons, which is
+# mostly QtWebEngine, a browser engine this never loads.
+dependencies = ["PySide6-Essentials>=6.7"]
 
 [project.urls]
 Homepage = "https://github.com/ChristianKlass/corak"
